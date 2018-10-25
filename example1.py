@@ -147,7 +147,7 @@ class TestScene(Scene):
         menu = PopoverMenuComponent(
             [
                 ('Set &Text', [
-                    ('&Default', lambda menuentry, option: text('A ghetto <underline>m</underline>enu')),
+                    ('&Default', lambda menuentry, option: text('A popover <underline>m</underline>enu')),
                     ('&Others', [
                         ('Option &1', lambda menuentry, option: text('A better <underline>m</underline>enu')),
                         ('Option &2', lambda menuentry, option: text('A great <underline>m</underline>enu')),
@@ -186,7 +186,7 @@ class TestScene(Scene):
                             ListComponent(
                                 [
                                     LabelComponent("Horizontal 2"),
-                                    ButtonComponent("A ghetto <underline>m</underline>enu", textcolor=Color.MAGENTA, formatted=True).on_click(self.pop_menu).set_hotkey('m'),
+                                    ButtonComponent("A popover <underline>m</underline>enu", textcolor=Color.MAGENTA, formatted=True).on_click(self.pop_menu).set_hotkey('m'),
                                     LabelComponent(""),
                                 ],
                                 direction=ListComponent.DIRECTION_TOP_TO_BOTTOM,
