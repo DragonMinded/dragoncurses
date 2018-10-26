@@ -1,4 +1,4 @@
-from setuptools import setup
+from setuptools import setup  # pyre-ignore
 
 setup(
     name='dragoncurses',
