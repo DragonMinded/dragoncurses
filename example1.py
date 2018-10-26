@@ -22,6 +22,10 @@ from dragoncurses.context import Color, RenderContext, BoundingRectangle
 from dragoncurses.scene import Scene
 from dragoncurses.loop import MainLoop, loop_config
 from dragoncurses.input import InputEvent, KeyboardInputEvent, Keys
+from dragoncurses.settings import Settings
+
+
+Settings.enable_unicode = True
 
 
 clock = None
@@ -197,7 +201,14 @@ class TestScene(Scene):
                     ),
                     LabelComponent("Label 1!"),
                     PaddingComponent(BorderComponent(LabelComponent("Label 2!"), color=Color.GREEN), padding=2),
-                    BorderComponent(LabelComponent("Label 3!"), style=BorderComponent.LINES, color=Color.CYAN),
+                    ListComponent(
+                        [
+                            BorderComponent(LabelComponent("Label 3!"), style=BorderComponent.ASCII, color=Color.CYAN),
+                            BorderComponent(LabelComponent("Label 4!"), style=BorderComponent.SINGLE),
+                            BorderComponent(LabelComponent("Label 5!"), style=BorderComponent.DOUBLE),
+                        ],
+                        direction = ListComponent.DIRECTION_LEFT_TO_RIGHT,
+                    ),
                     LabelComponent("Label 4!"),
                 ],
                 direction=ListComponent.DIRECTION_TOP_TO_BOTTOM,

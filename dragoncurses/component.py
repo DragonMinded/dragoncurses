@@ -3,13 +3,14 @@ from typing import Any, Callable, Dict, List, Optional, Tuple, TYPE_CHECKING
 
 from .input import Buttons, Keys, MouseInputEvent, KeyboardInputEvent, DefocusInputEvent
 from .context import Color, RenderContext, BoundingRectangle
+from .settings import Settings
 
 if TYPE_CHECKING:
     from .scene import Scene
     from .input import InputEvent
 
 
-class ComponentException:
+class ComponentException(Exception):
     pass
 
 
@@ -278,7 +279,11 @@ class ButtonComponent(HotkeyableComponent, ClickableComponent, Component):
     def __init__(self, text: str = "", *, textcolor: Optional[str] = None, bordercolor: Optional[str] = None, formatted: bool = False) -> None:
         super().__init__()
         self.__label = LabelComponent(text, color=textcolor, formatted=formatted)
-        self.__border = BorderComponent(PaddingComponent(self.__label, horizontalpadding=1), style=BorderComponent.LINES, color=bordercolor)
+        self.__border = BorderComponent(
+            PaddingComponent(self.__label, horizontalpadding=1),
+            style=BorderComponent.DOUBLE if Settings.enable_unicode else BorderComponent.ASCII,
+            color=bordercolor,
+        )
 
     def render(self, context: RenderContext) -> None:
         self.__border._render(context, context.bounds)
@@ -326,8 +331,10 @@ class ButtonComponent(HotkeyableComponent, ClickableComponent, Component):
 
 class BorderComponent(Component):
 
-    SOLID = 'solid'
-    LINES = 'lines'
+    SOLID = 'SOLID'
+    ASCII = 'ASCII'
+    SINGLE = 'SINGLE'
+    DOUBLE = 'DOUBLE'
 
     def __init__(self, component: Component, *, style: Optional[str] = None, color: Optional[str] = None) -> None:
         super().__init__()
@@ -335,6 +342,9 @@ class BorderComponent(Component):
         self.__style = style or BorderComponent.SOLID
         self.__color = color or Color.NONE
         self.__drawn = False
+
+        if self.__style in [self.SINGLE, self.DOUBLE] and not Settings.enable_unicode:
+            raise ComponentException("Unicode is not enabled, cannot use {} border style!".format(self.__style))
 
     @property
     def dirty(self) -> bool:
@@ -370,9 +380,15 @@ class BorderComponent(Component):
             if self.__style == BorderComponent.SOLID:
                 context.draw_string(0, x, " ", invert=True, color=self.__color)
                 context.draw_string(context.bounds.height - 1, x, " ", invert=True, color=self.__color)
-            elif self.__style == BorderComponent.LINES:
+            elif self.__style == BorderComponent.ASCII:
                 context.draw_string(0, x, "-", color=self.__color)
                 context.draw_string(context.bounds.height - 1, x, "-", color=self.__color)
+            elif self.__style == BorderComponent.SINGLE:
+                context.draw_string(0, x, "\u2500", color=self.__color)
+                context.draw_string(context.bounds.height - 1, x, "\u2500", color=self.__color)
+            elif self.__style == BorderComponent.DOUBLE:
+                context.draw_string(0, x, "\u2550", color=self.__color)
+                context.draw_string(context.bounds.height - 1, x, "\u2550", color=self.__color)
             else:
                 raise ComponentException("Invalid border style {}".format(self.__style))
 
@@ -380,17 +396,33 @@ class BorderComponent(Component):
             if self.__style == BorderComponent.SOLID:
                 context.draw_string(y, 0, " ", invert=True, color=self.__color)
                 context.draw_string(y, context.bounds.width - 1, " ", invert=True, color=self.__color)
-            elif self.__style == BorderComponent.LINES:
+            elif self.__style == BorderComponent.ASCII:
                 context.draw_string(y, 0, "|", color=self.__color)
                 context.draw_string(y, context.bounds.width - 1, "|", color=self.__color)
+            elif self.__style == BorderComponent.SINGLE:
+                context.draw_string(y, 0, "\u2502", color=self.__color)
+                context.draw_string(y, context.bounds.width - 1, "\u2502", color=self.__color)
+            elif self.__style == BorderComponent.DOUBLE:
+                context.draw_string(y, 0, "\u2551", color=self.__color)
+                context.draw_string(y, context.bounds.width - 1, "\u2551", color=self.__color)
             else:
                 raise ComponentException("Invalid border style {}".format(self.__style))
 
-        if self.__style == BorderComponent.LINES:
+        if self.__style == BorderComponent.ASCII:
             context.draw_string(0, 0, "+", color=self.__color)
             context.draw_string(0, context.bounds.width - 1, "+", color=self.__color)
             context.draw_string(context.bounds.height - 1, 0, "+", color=self.__color)
             context.draw_string(context.bounds.height - 1, context.bounds.width - 1, "+", color=self.__color)
+        elif self.__style == BorderComponent.SINGLE:
+            context.draw_string(0, 0, "\u250C", color=self.__color)
+            context.draw_string(0, context.bounds.width - 1, "\u2510", color=self.__color)
+            context.draw_string(context.bounds.height - 1, 0, "\u2514", color=self.__color)
+            context.draw_string(context.bounds.height - 1, context.bounds.width - 1, "\u2518", color=self.__color)
+        elif self.__style == BorderComponent.DOUBLE:
+            context.draw_string(0, 0, "\u2554", color=self.__color)
+            context.draw_string(0, context.bounds.width - 1, "\u2557", color=self.__color)
+            context.draw_string(context.bounds.height - 1, 0, "\u255A", color=self.__color)
+            context.draw_string(context.bounds.height - 1, context.bounds.width - 1, "\u255D", color=self.__color)
 
         if context.bounds.width > 2 and context.bounds.height > 2:
             self.__component._render(
@@ -904,7 +936,7 @@ class MenuSeparatorComponent(Component):
 
     def render(self, context: RenderContext) -> None:
         context.clear()
-        context.draw_string(0, 0, "-" * context.bounds.width)
+        context.draw_string(0, 0, ("\u2500" if Settings.enable_unicode else "-") * context.bounds.width)
         self.__rendered = True
 
     @property
