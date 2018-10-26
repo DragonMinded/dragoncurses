@@ -4,7 +4,8 @@ import os
 import sys
 import time
 
-from typing import List, Optional
+from threading import Thread
+from typing import List, Optional, Any
 
 from dragoncurses.component import (
     Component,
@@ -29,6 +30,7 @@ Settings.enable_unicode = True
 
 
 clock = None
+counter = None
 
 
 class HelloWorldComponent(Component):
@@ -71,7 +73,10 @@ class WelcomeScene(Scene):
 
     def create(self) -> List[Component]:
         global clock
+        global counter
+
         clock = LabelComponent(get_current_time())
+        counter = LabelComponent("Threads aren't working!")
         return [
             StickyComponent(
                 StickyComponent(
@@ -104,7 +109,8 @@ class WelcomeScene(Scene):
                                     size=1,
                                 ),
                                 EmptyComponent(),
-                                LabelComponent("Some inverted text", invert=True)
+                                LabelComponent("Some inverted text", invert=True),
+                                counter,
                             ],
                             size=4,
                             direction=ListComponent.DIRECTION_TOP_TO_BOTTOM,
@@ -120,7 +126,7 @@ class WelcomeScene(Scene):
 
     def handle_input(self, event: InputEvent) -> bool:
         if isinstance(event, KeyboardInputEvent):
-            if event.character == Keys.ESCAPE:
+            if event.character in [Keys.ESCAPE, 'q']:
                 self.register_component(
                     DialogBoxComponent(
                         'Are you sure you want to exit?',
@@ -217,7 +223,7 @@ class TestScene(Scene):
 
     def handle_input(self, event: InputEvent) -> bool:
         if isinstance(event, KeyboardInputEvent):
-            if event.character == Keys.ESCAPE:
+            if event.character in [Keys.ESCAPE, 'q']:
                 self.register_component(
                     DialogBoxComponent(
                         'Are you sure you want to exit?',
@@ -246,6 +252,16 @@ def idle(mainloop: MainLoop) -> None:
         clock.text = get_current_time()
 
 
+def thread(exit: List[Any]) -> None:
+    global counter
+    val = 0
+
+    while len(exit) == 0:
+        if counter is not None:
+            counter.text = "Threading works!\nCounter is {}".format(val)
+            val +=1
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="A simple curses UI library.")
     args = parser.parse_args()
@@ -257,8 +273,15 @@ def main() -> int:
             loop.change_scene(WelcomeScene)
             loop.run()
 
+    exitthread = []
+    t = Thread(target=thread, args=(exitthread,))
+    t.start()
+
     os.environ.setdefault('ESCDELAY', '0')
     curses.wrapper(wrapped)
+
+    exitthread.append('exit')
+
     return 0
 
 

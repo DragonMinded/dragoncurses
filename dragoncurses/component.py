@@ -1,3 +1,4 @@
+from threading import Lock
 from _curses import error as CursesError
 from typing import Any, Callable, Dict, List, Optional, Tuple, TYPE_CHECKING
 
@@ -24,6 +25,7 @@ class Component:
     def _attach(self, scene: "Scene", settings: Dict[str, Any]) -> None:
         self.settings = settings
         self.scene = scene
+        self.lock = Lock()
         self.__children = []
         self.attach(scene, settings)
 
@@ -81,7 +83,8 @@ class Component:
     def _render(self, context: RenderContext, bounds: BoundingRectangle) -> None:
         with context.clip(bounds) as subcontext:
             self.location = subcontext.location
-            self.render(subcontext)
+            with self.lock:
+                self.render(subcontext)
 
     def render(self, context: RenderContext) -> None:
         """
@@ -197,8 +200,9 @@ class LabelComponent(Component):
         return self.__text
 
     def __set_text(self, text: str) -> None:
-        self.__rendered = False if not self.__rendered else (self.__text == text)
-        self.__text = text
+        with self.lock:
+            self.__rendered = False if not self.__rendered else (self.__text == text)
+            self.__text = text
 
     text = property(__get_text, __set_text)
 
@@ -206,8 +210,9 @@ class LabelComponent(Component):
         return self.__color
 
     def __set_color(self, color: str) -> None:
-        self.__rendered = False if not self.__rendered else (self.__color == color)
-        self.__color = color
+        with self.lock:
+            self.__rendered = False if not self.__rendered else (self.__color == color)
+            self.__color = color
 
     color = property(__get_color, __set_color)
 
@@ -215,8 +220,9 @@ class LabelComponent(Component):
         return self.__invert
 
     def __set_invert(self, invert: bool) -> None:
-        self.__rendered = False if not self.__rendered else (self.__invert == invert)
-        self.__invert = invert
+        with self.lock:
+            self.__rendered = False if not self.__rendered else (self.__invert == invert)
+            self.__invert = invert
 
     invert = property(__get_invert, __set_invert)
 
@@ -305,7 +311,8 @@ class ButtonComponent(HotkeyableComponent, ClickableComponent, Component):
         return self.__label.text  # pyre-ignore Pyre doesn't understand properties...
 
     def __set_text(self, text: str) -> None:
-        self.__label.text = text
+        with self.lock:
+            self.__label.text = text
 
     text = property(__get_text, __set_text)
 
@@ -313,7 +320,8 @@ class ButtonComponent(HotkeyableComponent, ClickableComponent, Component):
         return self.__label.color  # pyre-ignore Pyre doesn't understand properties...
 
     def __set_textcolor(self, color: str) -> None:
-        self.__label.color = color
+        with self.lock:
+            self.__label.color = color
 
     textcolor = property(__get_textcolor, __set_textcolor)
 
@@ -321,7 +329,8 @@ class ButtonComponent(HotkeyableComponent, ClickableComponent, Component):
         return self.__border.color  # pyre-ignore Pyre doesn't understand properties...
 
     def __set_bordercolor(self, color: str) -> None:
-        self.__border.color = color
+        with self.lock:
+            self.__border.color = color
 
     bordercolor = property(__get_bordercolor, __set_bordercolor)
 
@@ -439,8 +448,9 @@ class BorderComponent(Component):
         return self.__color
 
     def __set_color(self, color: str) -> None:
-        self.__drawn = False if not self.__drawn else (self.__color == color)
-        self.__color = color
+        with self.lock:
+            self.__drawn = False if not self.__drawn else (self.__color == color)
+            self.__color = color
 
     color = property(__get_color, __set_color)
 
@@ -914,9 +924,10 @@ class MenuEntryComponent(HotkeyableComponent, ClickableComponent, Component):
         return self.__animating
 
     def __set_animating(self, animating: bool) -> None:
-        self.__rendered = False if not self.__rendered else (self.__animating == animating)
-        self.__animating = animating
-        self.__animation_spot = 1
+        with self.lock:
+            self.__rendered = False if not self.__rendered else (self.__animating == animating)
+            self.__animating = animating
+            self.__animation_spot = 1
 
     animating = property(__get_animating, __set_animating)
 
