@@ -18,6 +18,7 @@ from dragoncurses.component import (
     PopoverMenuComponent,
     StickyComponent,
     EmptyComponent,
+    MonochromePictureComponent,
 )
 from dragoncurses.context import Color, RenderContext, BoundingRectangle
 from dragoncurses.scene import Scene
@@ -36,6 +37,7 @@ counter = None
 class HelloWorldComponent(Component):
 
     def __init__(self) -> None:
+        super().__init__()
         self.animation = 0  # type: Optional[int]
 
     def tick(self) -> None:
@@ -75,6 +77,14 @@ class WelcomeScene(Scene):
         global clock
         global counter
 
+        picture = [
+            [False, False, True, False, False],
+            [False, True, True, True, False],
+            [True, True, False, True, True],
+            [False, True, True, True, False],
+            [False, False, True, False, False],
+        ]
+
         clock = LabelComponent(get_current_time())
         counter = LabelComponent("Threads aren't working!")
         return [
@@ -113,6 +123,27 @@ class WelcomeScene(Scene):
                                 counter,
                             ],
                             size=4,
+                            direction=ListComponent.DIRECTION_TOP_TO_BOTTOM,
+                        ),
+                        ListComponent(
+                            [
+                                PaddingComponent(
+                                    MonochromePictureComponent(
+                                        picture,
+                                        size=MonochromePictureComponent.SIZE_FULL,
+                                        color=Color.MAGENTA,
+                                    ),
+                                    padding=2,
+                                ),
+                                PaddingComponent(
+                                    MonochromePictureComponent(
+                                        picture,
+                                        size=MonochromePictureComponent.SIZE_HALF,
+                                        color=Color.MAGENTA,
+                                    ),
+                                    padding=2,
+                                ) if Settings.enable_unicode else EmptyComponent(),
+                            ],
                             direction=ListComponent.DIRECTION_TOP_TO_BOTTOM,
                         ),
                     ],
@@ -210,8 +241,8 @@ class TestScene(Scene):
                     ListComponent(
                         [
                             BorderComponent(LabelComponent("Label 3!"), style=BorderComponent.ASCII, color=Color.CYAN),
-                            BorderComponent(LabelComponent("Label 4!"), style=BorderComponent.SINGLE),
-                            BorderComponent(LabelComponent("Label 5!"), style=BorderComponent.DOUBLE),
+                            BorderComponent(LabelComponent("Label 4!"), style=BorderComponent.SINGLE) if Settings.enable_unicode else EmptyComponent(),
+                            BorderComponent(LabelComponent("Label 5!"), style=BorderComponent.DOUBLE) if Settings.enable_unicode else EmptyComponent(),
                         ],
                         direction = ListComponent.DIRECTION_LEFT_TO_RIGHT,
                     ),

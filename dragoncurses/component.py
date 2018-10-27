@@ -22,10 +22,12 @@ class Component:
     scene = None
     __children = None
 
+    def __init__(self) -> None:
+        self.lock = Lock()
+
     def _attach(self, scene: "Scene", settings: Dict[str, Any]) -> None:
         self.settings = settings
         self.scene = scene
-        self.lock = Lock()
         self.__children = []
         self.attach(scene, settings)
 
@@ -1116,3 +1118,148 @@ class PopoverMenuComponent(Component):
 
     def __repr__(self) -> str:
         return "PopoverMenuComponent({})".format(",".join(self.__entries))
+
+
+class MonochromePictureComponent(Component):
+
+    SIZE_FULL = "SIZE_FULL"
+    SIZE_HALF = "SIZE_HALF"
+
+    def __init__(self, data: List[List[bool]], *, size: Optional[str] = None, color: Optional[str] = None) -> None:
+        super().__init__()
+        self.__color = color or Color.NONE
+        self.__size = size or self.SIZE_FULL
+        if self.__size == self.SIZE_HALF and not Settings.enable_unicode:
+            raise ComponentException("Unicode is not enabled, cannot use {} drawing style!".format(self.__size))
+        self.__rendered = False
+        self.__set_data_impl(data)
+
+    @property
+    def bounds(self) -> BoundingRectangle:
+        if self.__size == self.SIZE_FULL:
+            return BoundingRectangle(
+                top=0,
+                bottom=self.__height,
+                left=0,
+                right=self.__width,
+            )
+        elif self.__size == self.SIZE_HALF:
+            return BoundingRectangle(
+                top=0,
+                bottom=int((self.__height + 1) / 2),
+                left=0,
+                right=int((self.__width + 1) / 2),
+            )
+        else:
+            raise ComponentException("Invalid size {}".format(self.__size))
+
+    def render(self, context: RenderContext) -> None:
+        if self.__size == self.SIZE_FULL:
+            for row in range(self.__height):
+                for column in range(self.__width):
+                    if Settings.enable_unicode:
+                        char = "\u2588" if self.__data[row][column] else " "
+                        invert = False
+                    else:
+                        invert = self.__data[row][column]
+                        char = " "
+
+                    context.draw_string(row, column, char, invert=invert, color=self.__color)
+
+        if self.__size == self.SIZE_HALF:
+            for row in range(int((self.__height + 1) / 2)):
+                for column in range(int((self.__width + 1) / 2)):
+                    # Grab a quad that represents what graphic to draw
+                    quad = (
+                        self.__data[row * 2][(column * 2):((column * 2) + 2)] +
+                        self.__data[(row * 2) + 1][(column * 2):((column * 2) + 2)]
+                    )
+                    quad = "".join("1" if v else "0" for v in quad)
+
+                    # Look it up
+                    if quad == "0000":
+                        char = " "
+                    elif quad == "0001":
+                        char = "\u2597"
+                    elif quad == "0010":
+                        char = "\u2598"
+                    elif quad == "0011":
+                        char = "\u2584"
+                    elif quad == "0100":
+                        char = "\u259D"
+                    elif quad == "0101":
+                        char = "\u2590"
+                    elif quad == "0110":
+                        char = "\u259E"
+                    elif quad == "0111":
+                        char = "\u259F"
+                    elif quad == "1000":
+                        char = "\u2598"
+                    elif quad == "1001":
+                        char = "\u259A"
+                    elif quad == "1010":
+                        char = "\u258C"
+                    elif quad == "1011":
+                        char = "\u2599"
+                    elif quad == "1100":
+                        char = "\u2580"
+                    elif quad == "1101":
+                        char = "\u259C"
+                    elif quad == "1110":
+                        char = "\u259B"
+                    elif quad == "1111":
+                        char = "\u2588"
+                    else:
+                        raise Exception("Logic error, invalid quad '{}'!".format(quad))
+
+                    # Render it
+                    context.draw_string(row, column, char, color=self.__color)
+
+        self.__rendered = True
+
+    @property
+    def dirty(self) -> bool:
+        return not self.__rendered
+
+    def __get_data(self) -> List[List[bool]]:
+        return self.__data
+
+    def __set_data_impl(self, data: List[List[bool]]) -> None:
+        self.__height = len(data)
+        self.__width = max(len(p) for p in data)
+
+        # Chunk our graphics data into groups of 2
+        self.__data = data
+
+        if self.__size == self.SIZE_HALF:
+            # First, do the easy part of making sure the height is divisible by 2
+            if (len(self.__data) & 1) == 1:
+                self.__data = [*self.data, []]
+
+            # Now, do the hard part of making sure the width is divisible by 2
+            if (self.__width & 1) == 1:
+                desired_width = self.__width + 1
+            else:
+                desired_width = self.__width
+        else:
+            desired_width = self.__width
+
+        for i in range(len(self.__data)):
+            if len(self.__data[i]) < desired_width:
+                self.__data[i] = [*self.__data[i], *([False] * (desired_width - len(self.__data[i])))]
+
+    def __set_data(self, data: List[List[bool]]) -> None:
+        with self.lock:
+            self.__set_data_impl(data)
+
+    data = property(__get_data, __set_data)
+
+    def __get_color(self) -> str:
+        return self.__color
+
+    def __set_color(self, color: str) -> None:
+        with self.lock:
+            self.__rendered = False if not self.__rendered else (self.__color == color)
+            self.__color = color
+
+    color = property(__get_color, __set_color)
