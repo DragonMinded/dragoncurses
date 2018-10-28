@@ -19,6 +19,7 @@ from dragoncurses.component import (
     StickyComponent,
     EmptyComponent,
     MonochromePictureComponent,
+    PictureComponent,
 )
 from dragoncurses.context import Color, RenderContext, BoundingRectangle
 from dragoncurses.scene import Scene
@@ -84,6 +85,18 @@ class WelcomeScene(Scene):
             [False, True, True, True, False],
             [False, False, True, False, False],
         ]
+        colorpicture = [
+            [Color.BLACK, Color.BLACK, Color.BLACK, Color.WHITE, Color.WHITE, Color.WHITE, Color.WHITE, Color.WHITE, Color.BLACK, Color.BLACK, Color.BLACK, Color.BLACK],
+            [Color.BLACK, Color.BLACK, Color.WHITE, Color.YELLOW, Color.YELLOW, Color.YELLOW, Color.YELLOW, Color.YELLOW, Color.WHITE, Color.BLACK, Color.BLACK, Color.BLACK],
+            [Color.BLACK, Color.WHITE, Color.YELLOW, Color.BLUE, Color.YELLOW, Color.YELLOW, Color.YELLOW, Color.BLUE, Color.YELLOW, Color.WHITE, Color.BLACK, Color.BLACK],
+            [Color.WHITE, Color.YELLOW, Color.YELLOW, Color.YELLOW, Color.YELLOW, Color.YELLOW, Color.YELLOW, Color.YELLOW, Color.YELLOW, Color.YELLOW, Color.WHITE, Color.BLACK],
+            [Color.WHITE, Color.YELLOW, Color.YELLOW, Color.YELLOW, Color.YELLOW, Color.YELLOW, Color.YELLOW, Color.YELLOW, Color.YELLOW, Color.YELLOW, Color.WHITE, Color.BLACK],
+            [Color.WHITE, Color.YELLOW, Color.YELLOW, Color.RED, Color.YELLOW, Color.YELLOW, Color.YELLOW, Color.RED, Color.YELLOW, Color.YELLOW, Color.WHITE, Color.BLACK],
+            [Color.BLACK, Color.WHITE, Color.YELLOW, Color.YELLOW, Color.RED, Color.RED, Color.RED, Color.YELLOW, Color.YELLOW, Color.WHITE, Color.BLACK, Color.BLACK],
+            [Color.BLACK, Color.BLACK, Color.WHITE, Color.YELLOW, Color.YELLOW, Color.YELLOW, Color.YELLOW, Color.YELLOW, Color.WHITE, Color.BLACK, Color.BLACK, Color.BLACK],
+            [Color.BLACK, Color.BLACK, Color.BLACK, Color.WHITE, Color.WHITE, Color.WHITE, Color.WHITE, Color.WHITE, Color.BLACK, Color.BLACK, Color.BLACK, Color.BLACK],
+            [Color.BLACK, Color.BLACK, Color.BLACK, Color.BLACK, Color.BLACK, Color.BLACK, Color.BLACK, Color.BLACK, Color.BLACK, Color.BLACK, Color.BLACK, Color.BLACK],
+        ]
 
         clock = LabelComponent(get_current_time())
         counter = LabelComponent("Threads aren't working!")
@@ -142,6 +155,25 @@ class WelcomeScene(Scene):
                                         size=MonochromePictureComponent.SIZE_HALF,
                                         forecolor=Color.MAGENTA,
                                         backcolor=Color.WHITE,
+                                    ),
+                                    padding=2,
+                                ) if Settings.enable_unicode else EmptyComponent(),
+                            ],
+                            direction=ListComponent.DIRECTION_TOP_TO_BOTTOM,
+                        ),
+                        ListComponent(
+                            [
+                                PaddingComponent(
+                                    PictureComponent(
+                                        colorpicture,
+                                        size=PictureComponent.SIZE_FULL,
+                                    ),
+                                    padding=2,
+                                ),
+                                PaddingComponent(
+                                    PictureComponent(
+                                        colorpicture,
+                                        size=PictureComponent.SIZE_HALF,
                                     ),
                                     padding=2,
                                 ) if Settings.enable_unicode else EmptyComponent(),

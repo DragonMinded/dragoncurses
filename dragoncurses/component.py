@@ -1194,7 +1194,7 @@ class MonochromePictureComponent(Component):
                     elif quad == "0001":
                         char = "\u2597"
                     elif quad == "0010":
-                        char = "\u2598"
+                        char = "\u2596"
                     elif quad == "0011":
                         char = "\u2584"
                     elif quad == "0100":
@@ -1246,7 +1246,7 @@ class MonochromePictureComponent(Component):
         if self.__size == self.SIZE_HALF:
             # First, do the easy part of making sure the height is divisible by 2
             if (len(self.__data) & 1) == 1:
-                self.__data = [*self.data, []]
+                self.__data = [*self.__data, []]
 
             # Now, do the hard part of making sure the width is divisible by 2
             if (self.__width & 1) == 1:
@@ -1285,3 +1285,144 @@ class MonochromePictureComponent(Component):
             self.__backcolor = backcolor
 
     backcolor = property(__get_backcolor, __set_backcolor)
+
+
+class PictureComponent(Component):
+
+    SIZE_FULL = "SIZE_FULL"
+    SIZE_HALF = "SIZE_HALF"
+
+    def __init__(self, data: List[List[str]], *, size: Optional[str] = None) -> None:
+        super().__init__()
+        self.__size = size or self.SIZE_FULL
+        if self.__size == self.SIZE_HALF and not Settings.enable_unicode:
+            raise ComponentException("Unicode is not enabled, cannot use {} drawing style!".format(self.__size))
+        self.__rendered = False
+        self.__set_data_impl(data)
+
+    @property
+    def bounds(self) -> BoundingRectangle:
+        if self.__size == self.SIZE_FULL:
+            return BoundingRectangle(
+                top=0,
+                bottom=self.__height,
+                left=0,
+                right=self.__width,
+            )
+        elif self.__size == self.SIZE_HALF:
+            return BoundingRectangle(
+                top=0,
+                bottom=int((self.__height + 1) / 2),
+                left=0,
+                right=int((self.__width + 1) / 2),
+            )
+        else:
+            raise ComponentException("Invalid size {}".format(self.__size))
+
+    def render(self, context: RenderContext) -> None:
+        if self.__size == self.SIZE_FULL:
+            for row in range(self.__height):
+                for column in range(self.__width):
+                    char = " "
+                    forecolor = Color.NONE
+                    backcolor = self.__data[row][column]
+
+                    context.draw_string(row, column, char, forecolor=forecolor, backcolor=backcolor)
+
+        if self.__size == self.SIZE_HALF:
+            for row in range(int((self.__height + 1) / 2)):
+                for column in range(int((self.__width + 1) / 2)):
+                    # Grab a quad that represents what graphic to draw
+                    quad = (
+                        self.__data[row * 2][(column * 2):((column * 2) + 2)] +
+                        self.__data[(row * 2) + 1][(column * 2):((column * 2) + 2)]
+                    )
+                    colors = [q for q in quad if q != Color.NONE]
+                    forecolor = colors[0] if len(colors) > 0 else Color.NONE
+                    backcolor = Color.NONE
+                    for color in colors:
+                        if color != forecolor:
+                            backcolor = color
+                            break
+
+                    quad = "".join("1" if v == forecolor else "0" for v in quad)
+                    if quad == "1111" and forecolor == backcolor:
+                        quad = "0000"
+
+                    # Look it up
+                    if quad == "0000":
+                        char = " "
+                    elif quad == "0001":
+                        char = "\u2597"
+                    elif quad == "0010":
+                        char = "\u2596"
+                    elif quad == "0011":
+                        char = "\u2584"
+                    elif quad == "0100":
+                        char = "\u259D"
+                    elif quad == "0101":
+                        char = "\u2590"
+                    elif quad == "0110":
+                        char = "\u259E"
+                    elif quad == "0111":
+                        char = "\u259F"
+                    elif quad == "1000":
+                        char = "\u2598"
+                    elif quad == "1001":
+                        char = "\u259A"
+                    elif quad == "1010":
+                        char = "\u258C"
+                    elif quad == "1011":
+                        char = "\u2599"
+                    elif quad == "1100":
+                        char = "\u2580"
+                    elif quad == "1101":
+                        char = "\u259C"
+                    elif quad == "1110":
+                        char = "\u259B"
+                    elif quad == "1111":
+                        char = "\u2588"
+                    else:
+                        raise Exception("Logic error, invalid quad '{}'!".format(quad))
+
+                    # Render it
+                    context.draw_string(row, column, char, forecolor=forecolor, backcolor=backcolor)
+
+        self.__rendered = True
+
+    @property
+    def dirty(self) -> bool:
+        return not self.__rendered
+
+    def __get_data(self) -> List[List[str]]:
+        return self.__data
+
+    def __set_data_impl(self, data: List[List[str]]) -> None:
+        self.__height = len(data)
+        self.__width = max(len(p) for p in data)
+
+        # Chunk our graphics data into groups of 2
+        self.__data = data
+
+        if self.__size == self.SIZE_HALF:
+            # First, do the easy part of making sure the height is divisible by 2
+            if (len(self.__data) & 1) == 1:
+                self.__data = [*self.__data, []]
+
+            # Now, do the hard part of making sure the width is divisible by 2
+            if (self.__width & 1) == 1:
+                desired_width = self.__width + 1
+            else:
+                desired_width = self.__width
+        else:
+            desired_width = self.__width
+
+        for i in range(len(self.__data)):
+            if len(self.__data[i]) < desired_width:
+                self.__data[i] = [*self.__data[i], *([Color.NONE] * (desired_width - len(self.__data[i])))]
+
+    def __set_data(self, data: List[List[str]]) -> None:
+        with self.lock:
+            self.__set_data_impl(data)
+
+    data = property(__get_data, __set_data)
