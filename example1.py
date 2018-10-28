@@ -131,7 +131,8 @@ class WelcomeScene(Scene):
                                     MonochromePictureComponent(
                                         picture,
                                         size=MonochromePictureComponent.SIZE_FULL,
-                                        color=Color.MAGENTA,
+                                        forecolor=Color.CYAN,
+                                        backcolor=Color.BLUE,
                                     ),
                                     padding=2,
                                 ),
@@ -139,7 +140,8 @@ class WelcomeScene(Scene):
                                     MonochromePictureComponent(
                                         picture,
                                         size=MonochromePictureComponent.SIZE_HALF,
-                                        color=Color.MAGENTA,
+                                        forecolor=Color.MAGENTA,
+                                        backcolor=Color.WHITE,
                                     ),
                                     padding=2,
                                 ) if Settings.enable_unicode else EmptyComponent(),
@@ -237,10 +239,10 @@ class TestScene(Scene):
                         direction = ListComponent.DIRECTION_LEFT_TO_RIGHT,
                     ),
                     LabelComponent("Label 1!"),
-                    PaddingComponent(BorderComponent(LabelComponent("Label 2!"), color=Color.GREEN), padding=2),
+                    PaddingComponent(BorderComponent(LabelComponent("Label 2!"), bordercolor=Color.GREEN), padding=2),
                     ListComponent(
                         [
-                            BorderComponent(LabelComponent("Label 3!"), style=BorderComponent.ASCII, color=Color.CYAN),
+                            BorderComponent(LabelComponent("Label 3!"), style=BorderComponent.ASCII, bordercolor=Color.CYAN),
                             BorderComponent(LabelComponent("Label 4!"), style=BorderComponent.SINGLE) if Settings.enable_unicode else EmptyComponent(),
                             BorderComponent(LabelComponent("Label 5!"), style=BorderComponent.DOUBLE) if Settings.enable_unicode else EmptyComponent(),
                         ],

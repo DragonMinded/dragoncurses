@@ -52,6 +52,8 @@ class Color:
     CYAN = 'cyan'
     BLUE = 'blue'
     MAGENTA = 'magenta'
+    WHITE = 'white'
+    BLACK = 'black'
 
 
 class RenderContext:
@@ -65,32 +67,56 @@ class RenderContext:
         self.__off_y = off_y
         self.__off_x = off_x
 
-    def __get_color(self, color: str) -> int:
-        if color in self.__color_table:
-            return self.__color_table[color]
+    def __get_color(self, forecolor: str, backcolor: str) -> int:
+        colorkey = forecolor + ":" + backcolor
+        if colorkey in self.__color_table:
+            return self.__color_table[colorkey]
 
         # Figure out the next color slot
         nextcolor = len(self.__color_table.keys())
 
         # Figure out the curses color mapping
-        if color == Color.RED:
-            actual = curses.COLOR_RED
-        elif color == Color.YELLOW:
-            actual = curses.COLOR_YELLOW
-        elif color == Color.GREEN:
-            actual = curses.COLOR_GREEN
-        elif color == Color.CYAN:
-            actual = curses.COLOR_CYAN
-        elif color == Color.BLUE:
-            actual = curses.COLOR_BLUE
-        elif color == Color.MAGENTA:
-            actual = curses.COLOR_MAGENTA
+        if forecolor == Color.RED:
+            forecurses = curses.COLOR_RED
+        elif forecolor == Color.YELLOW:
+            forecurses = curses.COLOR_YELLOW
+        elif forecolor == Color.GREEN:
+            forecurses = curses.COLOR_GREEN
+        elif forecolor == Color.CYAN:
+            forecurses = curses.COLOR_CYAN
+        elif forecolor == Color.BLUE:
+            forecurses = curses.COLOR_BLUE
+        elif forecolor == Color.MAGENTA:
+            forecurses = curses.COLOR_MAGENTA
+        elif forecolor == Color.WHITE:
+            forecurses = curses.COLOR_WHITE
+        elif forecolor == Color.BLACK:
+            forecurses = curses.COLOR_BLACK
         else:
-            actual = -1
+            forecurses = -1
+
+        if backcolor == Color.RED:
+            backcurses = curses.COLOR_RED
+        elif backcolor == Color.YELLOW:
+            backcurses = curses.COLOR_YELLOW
+        elif backcolor == Color.GREEN:
+            backcurses = curses.COLOR_GREEN
+        elif backcolor == Color.CYAN:
+            backcurses = curses.COLOR_CYAN
+        elif backcolor == Color.BLUE:
+            backcurses = curses.COLOR_BLUE
+        elif backcolor == Color.MAGENTA:
+            backcurses = curses.COLOR_MAGENTA
+        elif backcolor == Color.WHITE:
+            backcurses = curses.COLOR_WHITE
+        elif backcolor == Color.BLACK:
+            backcurses = curses.COLOR_BLACK
+        else:
+            backcurses = -1
 
         # Map the color to the slot
-        curses.init_pair(nextcolor, actual, -1)
-        self.__color_table[color] = nextcolor
+        curses.init_pair(nextcolor, forecurses, backcurses)
+        self.__color_table[colorkey] = nextcolor
 
         # Return the curses color mapping value
         return nextcolor
@@ -125,11 +151,12 @@ class RenderContext:
         y: int,
         x: int,
         string: str,
-        color: str=Color.NONE,
+        forecolor: str=Color.NONE,
+        backcolor: str=Color.NONE,
         invert: bool=False,
         underline: bool=False,
     ) -> None:
-        attributes = curses.color_pair(self.__get_color(color))
+        attributes = curses.color_pair(self.__get_color(forecolor, backcolor))
         if invert:
             attributes = attributes | curses.A_REVERSE
         if underline:
@@ -178,7 +205,7 @@ class RenderContext:
     ) -> None:
         displayed = False
         attributes = 0
-        colors = [self.__get_color(Color.NONE)]
+        colors = [self.__get_color(Color.NONE, Color.NONE)]
         parts = RenderContext.__split_formatted_string(string)
 
         for part in parts:
@@ -190,7 +217,11 @@ class RenderContext:
                 elif tag == "underline":
                     attributes = attributes & (~curses.A_UNDERLINE)
                 else:
-                    color = self.__get_color(tag)
+                    splitcolors = tag.split(",")
+                    while len(splitcolors) < 2:
+                        splitcolors.append(Color.NONE)
+
+                    color = self.__get_color(splitcolors[0], splitcolors[1])
                     if color == colors[-1] and len(colors) > 1:
                         colors = colors[:-1]
             elif part[:1] == "<" and part[-1:] == ">":
@@ -201,7 +232,11 @@ class RenderContext:
                 elif tag == "underline":
                     attributes = attributes | curses.A_UNDERLINE
                 else:
-                    colors.append(self.__get_color(tag))
+                    splitcolors = tag.split(",")
+                    while len(splitcolors) < 2:
+                        splitcolors.append(Color.NONE)
+
+                    colors.append(self.__get_color(splitcolors[0], splitcolors[1]))
             elif not displayed:
                 # First display should be setting the text position
                 displayed = True

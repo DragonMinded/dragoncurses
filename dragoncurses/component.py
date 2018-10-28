@@ -160,19 +160,20 @@ def _text_to_hotkeys(text: str) -> Tuple[str, Optional[str]]:
 
 class LabelComponent(Component):
 
-    def __init__(self, text: str = "", *, color: Optional[str] = None, invert: bool = False, formatted: bool = False) -> None:
+    def __init__(self, text: str = "", *, textcolor: Optional[str] = None, backcolor: Optional[str] = None, invert: bool = False, formatted: bool = False) -> None:
         super().__init__()
         self.__text = text
-        self.__color = color or Color.NONE
+        self.__forecolor = textcolor or Color.NONE
+        self.__backcolor = backcolor or Color.NONE
         self.__invert = invert
         self.__rendered = False
         self.__formatted = formatted
 
     def render(self, context: RenderContext) -> None:
-        if self.__invert:
+        if self.__invert or (self.__backcolor != Color.NONE):
             # Fill the entire label so that it is fully inverted
             for line in range(context.bounds.height):
-                context.draw_string(line, 0, " " * context.bounds.width, invert=True)
+                context.draw_string(line, 0, " " * context.bounds.width, forecolor=self.__forecolor, backcolor=self.__backcolor, invert=True)
         else:
             # Erase the background because labels aren't clear.
             context.clear()
@@ -185,12 +186,12 @@ class LabelComponent(Component):
             else:
                 pre = ""
                 post = ""
-            if self.color != Color.NONE:
-                pre = pre + "<{}>".format(self.__color.lower())
-                post = "</{}>".format(self.__color.lower()) + post
+            if self.__forecolor != Color.NONE or self.__backcolor != Color.NONE:
+                pre = pre + "<{},{}>".format(self.__forecolor.lower(), self.__backcolor.lower())
+                post = "</{},{}>".format(self.__forecolor.lower(), self.__backcolor.lower()) + post
             context.draw_formatted_string(0, 0, pre + self.__text + post)
         else:
-            context.draw_string(0, 0, self.__text, color=self.__color, invert=self.__invert)
+            context.draw_string(0, 0, self.__text, forecolor=self.__forecolor, backcolor=self.__backcolor, invert=self.__invert)
 
         self.__rendered = True
 
@@ -208,15 +209,25 @@ class LabelComponent(Component):
 
     text = property(__get_text, __set_text)
 
-    def __get_color(self) -> str:
-        return self.__color
+    def __get_textcolor(self) -> str:
+        return self.__forecolor
 
-    def __set_color(self, color: str) -> None:
+    def __set_textcolor(self, textcolor: str) -> None:
         with self.lock:
-            self.__rendered = False if not self.__rendered else (self.__color == color)
-            self.__color = color
+            self.__rendered = False if not self.__rendered else (self.__forecolor == textcolor)
+            self.__forecolor = textcolor
 
-    color = property(__get_color, __set_color)
+    textcolor = property(__get_textcolor, __set_textcolor)
+
+    def __get_backcolor(self) -> str:
+        return self.__backcolor
+
+    def __set_backcolor(self, backcolor: str) -> None:
+        with self.lock:
+            self.__rendered = False if not self.__rendered else (self.__backcolor == backcolor)
+            self.__backcolor = backcolor
+
+    backcolor = property(__get_backcolor, __set_backcolor)
 
     def __get_invert(self) -> bool:
         return self.__invert
@@ -286,11 +297,11 @@ class ButtonComponent(HotkeyableComponent, ClickableComponent, Component):
 
     def __init__(self, text: str = "", *, textcolor: Optional[str] = None, bordercolor: Optional[str] = None, formatted: bool = False) -> None:
         super().__init__()
-        self.__label = LabelComponent(text, color=textcolor, formatted=formatted)
+        self.__label = LabelComponent(text, textcolor=textcolor, formatted=formatted)
         self.__border = BorderComponent(
             PaddingComponent(self.__label, horizontalpadding=1),
             style=BorderComponent.DOUBLE if Settings.enable_unicode else BorderComponent.ASCII,
-            color=bordercolor,
+            bordercolor=bordercolor,
         )
 
     def render(self, context: RenderContext) -> None:
@@ -319,20 +330,20 @@ class ButtonComponent(HotkeyableComponent, ClickableComponent, Component):
     text = property(__get_text, __set_text)
 
     def __get_textcolor(self) -> str:
-        return self.__label.color  # pyre-ignore Pyre doesn't understand properties...
+        return self.__label.textcolor  # pyre-ignore Pyre doesn't understand properties...
 
     def __set_textcolor(self, color: str) -> None:
         with self.lock:
-            self.__label.color = color
+            self.__label.textcolor = color
 
     textcolor = property(__get_textcolor, __set_textcolor)
 
     def __get_bordercolor(self) -> str:
-        return self.__border.color  # pyre-ignore Pyre doesn't understand properties...
+        return self.__border.bordercolor  # pyre-ignore Pyre doesn't understand properties...
 
     def __set_bordercolor(self, color: str) -> None:
         with self.lock:
-            self.__border.color = color
+            self.__border.bordercolor = color
 
     bordercolor = property(__get_bordercolor, __set_bordercolor)
 
@@ -347,11 +358,11 @@ class BorderComponent(Component):
     SINGLE = 'SINGLE'
     DOUBLE = 'DOUBLE'
 
-    def __init__(self, component: Component, *, style: Optional[str] = None, color: Optional[str] = None) -> None:
+    def __init__(self, component: Component, *, style: Optional[str] = None, bordercolor: Optional[str] = None) -> None:
         super().__init__()
         self.__component = component
         self.__style = style or BorderComponent.SOLID
-        self.__color = color or Color.NONE
+        self.__color = bordercolor or Color.NONE
         self.__drawn = False
 
         if self.__style in [self.SINGLE, self.DOUBLE] and not Settings.enable_unicode:
@@ -389,51 +400,51 @@ class BorderComponent(Component):
 
         for x in range(context.bounds.width):
             if self.__style == BorderComponent.SOLID:
-                context.draw_string(0, x, " ", invert=True, color=self.__color)
-                context.draw_string(context.bounds.height - 1, x, " ", invert=True, color=self.__color)
+                context.draw_string(0, x, " ", invert=True, forecolor=self.__color)
+                context.draw_string(context.bounds.height - 1, x, " ", invert=True, forecolor=self.__color)
             elif self.__style == BorderComponent.ASCII:
-                context.draw_string(0, x, "-", color=self.__color)
-                context.draw_string(context.bounds.height - 1, x, "-", color=self.__color)
+                context.draw_string(0, x, "-", forecolor=self.__color)
+                context.draw_string(context.bounds.height - 1, x, "-", forecolor=self.__color)
             elif self.__style == BorderComponent.SINGLE:
-                context.draw_string(0, x, "\u2500", color=self.__color)
-                context.draw_string(context.bounds.height - 1, x, "\u2500", color=self.__color)
+                context.draw_string(0, x, "\u2500", forecolor=self.__color)
+                context.draw_string(context.bounds.height - 1, x, "\u2500", forecolor=self.__color)
             elif self.__style == BorderComponent.DOUBLE:
-                context.draw_string(0, x, "\u2550", color=self.__color)
-                context.draw_string(context.bounds.height - 1, x, "\u2550", color=self.__color)
+                context.draw_string(0, x, "\u2550", forecolor=self.__color)
+                context.draw_string(context.bounds.height - 1, x, "\u2550", forecolor=self.__color)
             else:
                 raise ComponentException("Invalid border style {}".format(self.__style))
 
         for y in range(1, context.bounds.height - 1):
             if self.__style == BorderComponent.SOLID:
-                context.draw_string(y, 0, " ", invert=True, color=self.__color)
-                context.draw_string(y, context.bounds.width - 1, " ", invert=True, color=self.__color)
+                context.draw_string(y, 0, " ", invert=True, forecolor=self.__color)
+                context.draw_string(y, context.bounds.width - 1, " ", invert=True, forecolor=self.__color)
             elif self.__style == BorderComponent.ASCII:
-                context.draw_string(y, 0, "|", color=self.__color)
-                context.draw_string(y, context.bounds.width - 1, "|", color=self.__color)
+                context.draw_string(y, 0, "|", forecolor=self.__color)
+                context.draw_string(y, context.bounds.width - 1, "|", forecolor=self.__color)
             elif self.__style == BorderComponent.SINGLE:
-                context.draw_string(y, 0, "\u2502", color=self.__color)
-                context.draw_string(y, context.bounds.width - 1, "\u2502", color=self.__color)
+                context.draw_string(y, 0, "\u2502", forecolor=self.__color)
+                context.draw_string(y, context.bounds.width - 1, "\u2502", forecolor=self.__color)
             elif self.__style == BorderComponent.DOUBLE:
-                context.draw_string(y, 0, "\u2551", color=self.__color)
-                context.draw_string(y, context.bounds.width - 1, "\u2551", color=self.__color)
+                context.draw_string(y, 0, "\u2551", forecolor=self.__color)
+                context.draw_string(y, context.bounds.width - 1, "\u2551", forecolor=self.__color)
             else:
                 raise ComponentException("Invalid border style {}".format(self.__style))
 
         if self.__style == BorderComponent.ASCII:
-            context.draw_string(0, 0, "+", color=self.__color)
-            context.draw_string(0, context.bounds.width - 1, "+", color=self.__color)
-            context.draw_string(context.bounds.height - 1, 0, "+", color=self.__color)
-            context.draw_string(context.bounds.height - 1, context.bounds.width - 1, "+", color=self.__color)
+            context.draw_string(0, 0, "+", forecolor=self.__color)
+            context.draw_string(0, context.bounds.width - 1, "+", forecolor=self.__color)
+            context.draw_string(context.bounds.height - 1, 0, "+", forecolor=self.__color)
+            context.draw_string(context.bounds.height - 1, context.bounds.width - 1, "+", forecolor=self.__color)
         elif self.__style == BorderComponent.SINGLE:
-            context.draw_string(0, 0, "\u250C", color=self.__color)
-            context.draw_string(0, context.bounds.width - 1, "\u2510", color=self.__color)
-            context.draw_string(context.bounds.height - 1, 0, "\u2514", color=self.__color)
-            context.draw_string(context.bounds.height - 1, context.bounds.width - 1, "\u2518", color=self.__color)
+            context.draw_string(0, 0, "\u250C", forecolor=self.__color)
+            context.draw_string(0, context.bounds.width - 1, "\u2510", forecolor=self.__color)
+            context.draw_string(context.bounds.height - 1, 0, "\u2514", forecolor=self.__color)
+            context.draw_string(context.bounds.height - 1, context.bounds.width - 1, "\u2518", forecolor=self.__color)
         elif self.__style == BorderComponent.DOUBLE:
-            context.draw_string(0, 0, "\u2554", color=self.__color)
-            context.draw_string(0, context.bounds.width - 1, "\u2557", color=self.__color)
-            context.draw_string(context.bounds.height - 1, 0, "\u255A", color=self.__color)
-            context.draw_string(context.bounds.height - 1, context.bounds.width - 1, "\u255D", color=self.__color)
+            context.draw_string(0, 0, "\u2554", forecolor=self.__color)
+            context.draw_string(0, context.bounds.width - 1, "\u2557", forecolor=self.__color)
+            context.draw_string(context.bounds.height - 1, 0, "\u255A", forecolor=self.__color)
+            context.draw_string(context.bounds.height - 1, context.bounds.width - 1, "\u255D", forecolor=self.__color)
 
         if context.bounds.width > 2 and context.bounds.height > 2:
             self.__component._render(
@@ -454,7 +465,7 @@ class BorderComponent(Component):
             self.__drawn = False if not self.__drawn else (self.__color == color)
             self.__color = color
 
-    color = property(__get_color, __set_color)
+    bordercolor = property(__get_color, __set_color)
 
     def handle_input(self, event: "InputEvent") -> bool:
         return self.__component._handle_input(event)
@@ -1125,9 +1136,10 @@ class MonochromePictureComponent(Component):
     SIZE_FULL = "SIZE_FULL"
     SIZE_HALF = "SIZE_HALF"
 
-    def __init__(self, data: List[List[bool]], *, size: Optional[str] = None, color: Optional[str] = None) -> None:
+    def __init__(self, data: List[List[bool]], *, size: Optional[str] = None, forecolor: Optional[str] = None, backcolor: Optional[str] = None) -> None:
         super().__init__()
-        self.__color = color or Color.NONE
+        self.__forecolor = forecolor or Color.NONE
+        self.__backcolor = backcolor or Color.NONE
         self.__size = size or self.SIZE_FULL
         if self.__size == self.SIZE_HALF and not Settings.enable_unicode:
             raise ComponentException("Unicode is not enabled, cannot use {} drawing style!".format(self.__size))
@@ -1164,7 +1176,7 @@ class MonochromePictureComponent(Component):
                         invert = self.__data[row][column]
                         char = " "
 
-                    context.draw_string(row, column, char, invert=invert, color=self.__color)
+                    context.draw_string(row, column, char, invert=invert, forecolor=self.__forecolor, backcolor=self.__backcolor)
 
         if self.__size == self.SIZE_HALF:
             for row in range(int((self.__height + 1) / 2)):
@@ -1213,7 +1225,7 @@ class MonochromePictureComponent(Component):
                         raise Exception("Logic error, invalid quad '{}'!".format(quad))
 
                     # Render it
-                    context.draw_string(row, column, char, color=self.__color)
+                    context.draw_string(row, column, char, forecolor=self.__forecolor, backcolor=self.__backcolor)
 
         self.__rendered = True
 
@@ -1254,12 +1266,22 @@ class MonochromePictureComponent(Component):
 
     data = property(__get_data, __set_data)
 
-    def __get_color(self) -> str:
-        return self.__color
+    def __get_forecolor(self) -> str:
+        return self.__forecolor
 
-    def __set_color(self, color: str) -> None:
+    def __set_forecolor(self, forecolor: str) -> None:
         with self.lock:
-            self.__rendered = False if not self.__rendered else (self.__color == color)
-            self.__color = color
+            self.__rendered = False if not self.__rendered else (self.__forecolor == forecolor)
+            self.__forecolor = forecolor
 
-    color = property(__get_color, __set_color)
+    forecolor = property(__get_forecolor, __set_forecolor)
+
+    def __get_backcolor(self) -> str:
+        return self.__backcolor
+
+    def __set_backcolor(self, backcolor: str) -> None:
+        with self.lock:
+            self.__rendered = False if not self.__rendered else (self.__backcolor == backcolor)
+            self.__backcolor = backcolor
+
+    backcolor = property(__get_backcolor, __set_backcolor)
