@@ -270,7 +270,11 @@ class TestScene(Scene):
                         ],
                         direction = ListComponent.DIRECTION_LEFT_TO_RIGHT,
                     ),
-                    LabelComponent("Label 1!"),
+                    LabelComponent(
+                        "This is a label with a lot of stuff that should word-wrap!\n" +
+                        "I've placed a few tabs and stuff here so we know it works!\n" +
+                        "What about some tabs? Let's do some tab-related activities~"
+                    ),
                     PaddingComponent(BorderComponent(LabelComponent("Label 2!"), bordercolor=Color.GREEN), padding=2),
                     ListComponent(
                         [
@@ -280,7 +284,12 @@ class TestScene(Scene):
                         ],
                         direction = ListComponent.DIRECTION_LEFT_TO_RIGHT,
                     ),
-                    LabelComponent("Label 4!"),
+                    LabelComponent(
+                        "This is a <underline>label</underline> with a <invert>lot</invert> of stuff that should word-wrap!\n" +
+                        "I've placed a <invert>few <green>tabs</green></invert> and stuff here so we know it works!\n" +
+                        "What about some tabs? Let's do some <red>tab-related</red> activities~",
+                        formatted=True,
+                    )
                 ],
                 direction=ListComponent.DIRECTION_TOP_TO_BOTTOM,
             ),

@@ -147,15 +147,88 @@ class RenderContext:
         for y in range(height):
             self.draw_string(y, 0, " " * width)
 
+    @staticmethod
+    def __get_wrap_points(string: str, starty: int, startx: int, bounds: BoundingRectangle) -> List[int]:
+        locations = []
+        processed = 0
+
+        while string:
+            # If we've wrapped once we start at the beginning of the line. Otherwise, we
+            # start where the start of the string is.
+            width = bounds.width if locations else (bounds.width - starty)
+            if len(string) <= width:
+                # Base case where we have enough room to draw the rest of the string.
+                for i in range(len(string)):
+                    if string[i] == '\n':
+                        locations.append(processed + i + 1)
+                break
+
+            # Find the closest wrap point (either a space/control character or a dash).
+            # We constrain our search to things that could wrap in the next line, plus
+            # the single character after in case it is a wrap character. That way if we
+            # were about to wrap and the next character would have wrapped us, we don't
+            # print it as the first character on the next line.
+            possibilities = []
+            i = 0
+            maxiter = min(len(string), (width + 1))
+            while i < maxiter:
+                if string[i] == '\n':
+                    # This is a manual wrap, set our location to one past it (we will
+                    # rely on the fact that its still printable and let curses do whatever).
+                    # Since we finish wrapping this chunk at this line, don't consider any
+                    # further possibilities.
+                    possibilities.append(i + 1)
+                    break
+                elif string[i] in [' ', '\t']:
+                    # We wrap at the end of the space block, so find the first non-space
+                    # character and set that as the wrap point.
+                    for j in range(i, len(string)):
+                        if string[j] not in [' ', '\t']:
+                            possibilities.append(j)
+                            i = j
+                            break
+                    else:
+                        # We didn't find anything, assume that spacing is the end of the string.
+                        break
+                elif string[i] == '-' and i < width:
+                    # We wrap after the dash as long as there isn't another dash and the
+                    # characters before and after it are alphanumeric (word-break detection).
+                    # We also don't want to wrap if this would have been the character on the
+                    # next line (this is unlike the whitespace wrapping above) so we check the
+                    # width.
+                    if i > 0 and i < (len(string) - 1):
+                        if string[i - 1].isalnum() and string[i + 1].isalnum():
+                            possibilities.append(i + 1)
+                            i = i + 1
+                else:
+                    # Regular character, don't care
+                    i += 1
+
+            if possibilities:
+                last = possibilities[-1]
+                locations.append(processed + last)
+                string = string[last:]
+                processed += last
+            else:
+                # Didn't find anywhere to wrap, so we give up, wrap at the exact point of
+                # overflow.
+                locations.append(processed + width)
+                string = string[width:]
+                processed += width
+
+        return locations
+
     def draw_string(
         self,
         y: int,
         x: int,
         string: str,
+        *,
         forecolor: str=Color.NONE,
         backcolor: str=Color.NONE,
         invert: bool=False,
         underline: bool=False,
+        wrap: bool=False
     ) -> None:
         attributes = curses.color_pair(self.__get_color(forecolor, backcolor))
         if invert:
@@ -163,10 +236,29 @@ class RenderContext:
         if underline:
             attributes = attributes | curses.A_UNDERLINE
 
-        try:
-            self.__curses_context.addstr(y, x, string, attributes)
-        except CursesError:
-            pass
+        if wrap:
+            # Wrap points takes care of carriage returns, so neuter curses ability
+            # to react to them.
+            wrap_points = RenderContext.__get_wrap_points(string, y, x, self.bounds)
+            string = string.replace('\n', ' ')
+        else:
+            wrap_points = []
+
+        # Make sure we process the last bit of the string by always having a hanging
+        # wrap point.
+        if not wrap_points or wrap_points[-1] != len(string):
+            wrap_points.append(len(string))
+        last_pos = 0
+
+        # Display each chunk in the proper spot.
+        for wrap_point in wrap_points:
+            try:
+                self.__curses_context.addstr(y, x, string[last_pos:wrap_point], attributes)
+            except CursesError:
+                pass
+            last_pos = wrap_point
+            y += 1
+            x = 0
 
     @staticmethod
     def __split_formatted_string(string: str) -> List[str]:
@@ -203,11 +295,19 @@ class RenderContext:
         y: int,
         x: int,
         string: str,
+        *,
+        wrap: bool=False
     ) -> None:
-        displayed = False
         attributes = 0
+        last_pos = 0
         colors = [self.__get_color(Color.NONE, Color.NONE)]
         parts = RenderContext.__split_formatted_string(string)
+        if wrap:
+            rawtext = "".join(RenderContext.__sanitize(part) for part in parts if not (part[:1] == "<" and part[-1:] == ">"))
+            wrap_points = RenderContext.__get_wrap_points(rawtext, y, x, self.bounds)
+        else:
+            wrap_points = []
+            self.__curses_context.move(y, x)
 
         for part in parts:
             if part[:2] == "</" and part[-1:] == ">":
@@ -238,19 +338,42 @@ class RenderContext:
                         splitcolors.append(Color.NONE)
 
                     colors.append(self.__get_color(splitcolors[0], splitcolors[1]))
-            elif not displayed:
-                # First display should be setting the text position
-                displayed = True
-                try:
-                    self.__curses_context.addstr(y, x, RenderContext.__sanitize(part), attributes | curses.color_pair(colors[-1]))
-                except CursesError:
-                    break
             else:
                 # The rest of the text displays should trail, for wrapping
-                try:
-                    self.__curses_context.addstr(RenderContext.__sanitize(part), attributes | curses.color_pair(colors[-1]))
-                except CursesError:
-                    break
+                text = RenderContext.__sanitize(part)
+                if wrap:
+                    # Disable curses ability to react to carriage returns
+                    text = text.replace('\n', ' ')
+                    while text:
+                        if not wrap_points:
+                            next_wrap_point = -1
+                        else:
+                            next_wrap_point = wrap_points[0] - last_pos
+                        if next_wrap_point >= 0 and next_wrap_point < len(text):
+                            # Only display part of the string, then go to next line
+                            amount = wrap_points[0] - last_pos
+                            wrap_points = wrap_points[1:]
+                            try:
+                                self.__curses_context.addstr(y, x, text[:amount], attributes | curses.color_pair(colors[-1]))
+                            except CursesError:
+                                pass
+                            text = text[amount:]
+                            last_pos += amount
+                            y += 1
+                            x = 0
+                        else:
+                            try:
+                                self.__curses_context.addstr(y, x, text, attributes | curses.color_pair(colors[-1]))
+                            except CursesError:
+                                pass
+                            x += len(text)
+                            last_pos += len(text)
+                            text = ""
+                else:
+                    try:
+                        self.__curses_context.addstr(text, attributes | curses.color_pair(colors[-1]))
+                    except CursesError:
+                        pass
 
     @staticmethod
     def formatted_string_length(

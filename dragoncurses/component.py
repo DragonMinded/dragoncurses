@@ -189,9 +189,9 @@ class LabelComponent(Component):
             if self.__forecolor != Color.NONE or self.__backcolor != Color.NONE:
                 pre = pre + "<{},{}>".format(self.__forecolor.lower(), self.__backcolor.lower())
                 post = "</{},{}>".format(self.__forecolor.lower(), self.__backcolor.lower()) + post
-            context.draw_formatted_string(0, 0, pre + self.__text + post)
+            context.draw_formatted_string(0, 0, pre + self.__text + post, wrap=True)
         else:
-            context.draw_string(0, 0, self.__text, forecolor=self.__forecolor, backcolor=self.__backcolor, invert=self.__invert)
+            context.draw_string(0, 0, self.__text, forecolor=self.__forecolor, backcolor=self.__backcolor, invert=self.__invert, wrap=True)
 
         self.__rendered = True
 
