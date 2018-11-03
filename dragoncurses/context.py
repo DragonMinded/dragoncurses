@@ -132,6 +132,7 @@ class RenderContext:
 
     @contextmanager
     def clip(self, rect: BoundingRectangle) -> Generator["RenderContext", None, None]:
+        rect = rect.clip(self.bounds)
         try:
             yield RenderContext(
                 self.__curses_context.derwin(rect.height, rect.width, rect.top, rect.left),
