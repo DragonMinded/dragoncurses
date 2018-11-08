@@ -68,13 +68,30 @@ class HelloWorldComponent(Component):
         return False
 
 
+class RenderCounterComponent(Component):
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.__rendered = False
+        self.__count = 0
+
+    def render(self, context: RenderContext) -> None:
+        self.__count += 1
+        context.draw_string(0, 0, "Rendered {} time{}!".format(self.__count, ("" if self.__count == 1 else "s")))
+        self.__rendered = True
+
+    @property
+    def dirty(self) -> bool:
+        return not self.__rendered
+
+
 class WelcomeScene(Scene):
 
     def update_button(self, component: Component, button: str) -> None:
         component.text = "A <underline>b</underline>utton (pressed {}!)".format(button)
         component.textcolor = Color.RED if button == "LEFT" else Color.CYAN if button == "RIGHT" else Color.YELLOW
 
-    def create(self) -> List[Component]:
+    def create(self) -> Component:
         global clock
         global counter
 
@@ -100,94 +117,93 @@ class WelcomeScene(Scene):
 
         clock = LabelComponent(get_current_time())
         counter = LabelComponent("Threads aren't working!")
-        return [
+        return StickyComponent(
             StickyComponent(
-                StickyComponent(
-                    clock,
-                    EmptyComponent(),
-                    location=StickyComponent.LOCATION_RIGHT,
-                    size=19,
-                ),
-                ListComponent(
-                    [
-                        ListComponent(
-                            [
-                                HelloWorldComponent(),
-                                ButtonComponent("A <underline>b</underline>utton (not pressed)", formatted=True).on_click(self.update_button).set_hotkey('b'),
-                                ListComponent(
-                                    [
-                                        LabelComponent("Testing <underline>1</underline>, <invert>2</invert>, 3!", formatted=True),
-                                        LabelComponent("<red>r</red><yellow>a</yellow><green>i</green><cyan>n</cyan><blue>b</blue><magenta>o</magenta>w", formatted=True),
-                                        LabelComponent(
-                                            "<red>r</red><yellow>a</yellow><green>i</green><cyan>n</cyan><blue>b</blue><magenta>o</magenta>w"
-                                            "<red>r</red><yellow>a</yellow><green>i</green><cyan>n</cyan><blue>b</blue><magenta>o</magenta>w"
-                                            "<red>r</red><yellow>a</yellow><green>i</green><cyan>n</cyan><blue>b</blue><magenta>o</magenta>w"
-                                            "<red>r</red><yellow>a</yellow><green>i</green><cyan>n</cyan><blue>b</blue><magenta>o</magenta>w"
-                                            "<red>r</red><yellow>a</yellow><green>i</green><cyan>n</cyan><blue>b</blue><magenta>o</magenta>w",
-                                            formatted=True
-                                        ),
-                                        LabelComponent("<invert><red>r</red><yellow>a</yellow><green>i</green><cyan>n</cyan><blue>b</blue><magenta>o</magenta>w</invert>", formatted=True),
-                                    ],
-                                    direction=ListComponent.DIRECTION_TOP_TO_BOTTOM,
-                                    size=1,
-                                ),
-                                EmptyComponent(),
-                                LabelComponent("Some inverted text", invert=True),
-                                counter,
-                            ],
-                            size=4,
-                            direction=ListComponent.DIRECTION_TOP_TO_BOTTOM,
-                        ),
-                        ListComponent(
-                            [
-                                PaddingComponent(
-                                    MonochromePictureComponent(
-                                        picture,
-                                        size=MonochromePictureComponent.SIZE_FULL,
-                                        forecolor=Color.CYAN,
-                                        backcolor=Color.BLUE,
-                                    ),
-                                    padding=2,
-                                ),
-                                PaddingComponent(
-                                    MonochromePictureComponent(
-                                        picture,
-                                        size=MonochromePictureComponent.SIZE_HALF,
-                                        forecolor=Color.MAGENTA,
-                                        backcolor=Color.WHITE,
-                                    ),
-                                    padding=2,
-                                ) if Settings.enable_unicode else EmptyComponent(),
-                            ],
-                            direction=ListComponent.DIRECTION_TOP_TO_BOTTOM,
-                        ),
-                        ListComponent(
-                            [
-                                PaddingComponent(
-                                    PictureComponent(
-                                        colorpicture,
-                                        size=PictureComponent.SIZE_FULL,
-                                    ),
-                                    padding=2,
-                                ),
-                                PaddingComponent(
-                                    PictureComponent(
-                                        colorpicture,
-                                        size=PictureComponent.SIZE_HALF,
-                                    ),
-                                    padding=2,
-                                ) if Settings.enable_unicode else EmptyComponent(),
-                            ],
-                            direction=ListComponent.DIRECTION_TOP_TO_BOTTOM,
-                        ),
-                    ],
-                    size = 30,
-                    direction = ListComponent.DIRECTION_LEFT_TO_RIGHT,
-                ),
-                location=StickyComponent.LOCATION_BOTTOM,
-                size=1,
+                clock,
+                EmptyComponent(),
+                location=StickyComponent.LOCATION_RIGHT,
+                size=19,
             ),
-        ]
+            ListComponent(
+                [
+                    ListComponent(
+                        [
+                            HelloWorldComponent(),
+                            RenderCounterComponent(),
+                            ButtonComponent("A <underline>b</underline>utton (not pressed)", formatted=True).on_click(self.update_button).set_hotkey('b'),
+                            ListComponent(
+                                [
+                                    LabelComponent("Testing <underline>1</underline>, <invert>2</invert>, 3!", formatted=True),
+                                    LabelComponent("<red>r</red><yellow>a</yellow><green>i</green><cyan>n</cyan><blue>b</blue><magenta>o</magenta>w", formatted=True),
+                                    LabelComponent(
+                                        "<red>r</red><yellow>a</yellow><green>i</green><cyan>n</cyan><blue>b</blue><magenta>o</magenta>w"
+                                        "<red>r</red><yellow>a</yellow><green>i</green><cyan>n</cyan><blue>b</blue><magenta>o</magenta>w"
+                                        "<red>r</red><yellow>a</yellow><green>i</green><cyan>n</cyan><blue>b</blue><magenta>o</magenta>w"
+                                        "<red>r</red><yellow>a</yellow><green>i</green><cyan>n</cyan><blue>b</blue><magenta>o</magenta>w"
+                                        "<red>r</red><yellow>a</yellow><green>i</green><cyan>n</cyan><blue>b</blue><magenta>o</magenta>w",
+                                        formatted=True
+                                    ),
+                                    LabelComponent("<invert><red>r</red><yellow>a</yellow><green>i</green><cyan>n</cyan><blue>b</blue><magenta>o</magenta>w</invert>", formatted=True),
+                                ],
+                                direction=ListComponent.DIRECTION_TOP_TO_BOTTOM,
+                                size=1,
+                            ),
+                            EmptyComponent(),
+                            LabelComponent("Some inverted text", invert=True),
+                            counter,
+                        ],
+                        size=4,
+                        direction=ListComponent.DIRECTION_TOP_TO_BOTTOM,
+                    ),
+                    ListComponent(
+                        [
+                            PaddingComponent(
+                                MonochromePictureComponent(
+                                    picture,
+                                    size=MonochromePictureComponent.SIZE_FULL,
+                                    forecolor=Color.CYAN,
+                                    backcolor=Color.BLUE,
+                                ),
+                                padding=2,
+                            ),
+                            PaddingComponent(
+                                MonochromePictureComponent(
+                                    picture,
+                                    size=MonochromePictureComponent.SIZE_HALF,
+                                    forecolor=Color.MAGENTA,
+                                    backcolor=Color.WHITE,
+                                ),
+                                padding=2,
+                            ) if Settings.enable_unicode else EmptyComponent(),
+                        ],
+                        direction=ListComponent.DIRECTION_TOP_TO_BOTTOM,
+                    ),
+                    ListComponent(
+                        [
+                            PaddingComponent(
+                                PictureComponent(
+                                    colorpicture,
+                                    size=PictureComponent.SIZE_FULL,
+                                ),
+                                padding=2,
+                            ),
+                            PaddingComponent(
+                                PictureComponent(
+                                    colorpicture,
+                                    size=PictureComponent.SIZE_HALF,
+                                ),
+                                padding=2,
+                            ) if Settings.enable_unicode else EmptyComponent(),
+                        ],
+                        direction=ListComponent.DIRECTION_TOP_TO_BOTTOM,
+                    ),
+                ],
+                size = 30,
+                direction = ListComponent.DIRECTION_LEFT_TO_RIGHT,
+            ),
+            location=StickyComponent.LOCATION_BOTTOM,
+            size=1,
+        )
 
     def handle_input(self, event: InputEvent) -> bool:
         if isinstance(event, KeyboardInputEvent):
@@ -251,49 +267,48 @@ class TestScene(Scene):
             menu.bounds.offset(3, 0),
         )
 
-    def create(self) -> List[Component]:
-        return [
-            ListComponent(
-                [
-                    ListComponent(
-                        [
-                            LabelComponent("Horizontal 1"),
-                            ListComponent(
-                                [
-                                    LabelComponent("Horizontal 2"),
-                                    ButtonComponent("A popover <underline>m</underline>enu", textcolor=Color.MAGENTA, formatted=True).on_click(self.pop_menu).set_hotkey('m'),
-                                    LabelComponent(""),
-                                ],
-                                direction=ListComponent.DIRECTION_TOP_TO_BOTTOM,
-                            ),
-                            LabelComponent("Horizontal 3"),
-                        ],
-                        direction = ListComponent.DIRECTION_LEFT_TO_RIGHT,
-                    ),
-                    LabelComponent(
-                        "This is a label with a lot of stuff that should word-wrap!\n" +
-                        "I've placed a few tabs and stuff here so we know it works!\n" +
-                        "What about some tabs? Let's do some tab-related activities~"
-                    ),
-                    PaddingComponent(BorderComponent(LabelComponent("Label 2!"), bordercolor=Color.GREEN), padding=2),
-                    ListComponent(
-                        [
-                            BorderComponent(LabelComponent("Label 3!"), style=BorderComponent.ASCII, bordercolor=Color.CYAN),
-                            BorderComponent(LabelComponent("Label 4!"), style=BorderComponent.SINGLE) if Settings.enable_unicode else EmptyComponent(),
-                            BorderComponent(LabelComponent("Label 5!"), style=BorderComponent.DOUBLE) if Settings.enable_unicode else EmptyComponent(),
-                        ],
-                        direction = ListComponent.DIRECTION_LEFT_TO_RIGHT,
-                    ),
-                    LabelComponent(
-                        "This is a <underline>label</underline> with a <invert>lot</invert> of stuff that should word-wrap!\n" +
-                        "I've placed a <invert>few <green>tabs</green></invert> and stuff here so we know it works!\n" +
-                        "What about some tabs? Let's do some <red>tab-related</red> activities~",
-                        formatted=True,
-                    )
-                ],
-                direction=ListComponent.DIRECTION_TOP_TO_BOTTOM,
-            ),
-        ]
+    def create(self) -> Component:
+        return ListComponent(
+            [
+                ListComponent(
+                    [
+                        LabelComponent("Horizontal 1"),
+                        ListComponent(
+                            [
+                                LabelComponent("Horizontal 2"),
+                                ButtonComponent("A popover <underline>m</underline>enu", textcolor=Color.MAGENTA, formatted=True).on_click(self.pop_menu).set_hotkey('m'),
+                            ],
+                            direction=ListComponent.DIRECTION_TOP_TO_BOTTOM,
+                            size=3,
+                        ),
+                        LabelComponent("Horizontal 3"),
+                    ],
+                    direction = ListComponent.DIRECTION_LEFT_TO_RIGHT,
+                ),
+                LabelComponent(
+                    "This is a label with a lot of stuff that should word-wrap!\n" +
+                    "I've placed a few tabs and stuff here so we know it works!\n" +
+                    "What about some tabs? Let's do some tab-related activities~"
+                ),
+                PaddingComponent(BorderComponent(LabelComponent("Label 2!"), bordercolor=Color.GREEN), padding=2),
+                ListComponent(
+                    [
+                        BorderComponent(LabelComponent("Label 3!"), style=BorderComponent.ASCII, bordercolor=Color.CYAN),
+                        BorderComponent(LabelComponent("Label 4!"), style=BorderComponent.SINGLE) if Settings.enable_unicode else EmptyComponent(),
+                        BorderComponent(LabelComponent("Label 5!"), style=BorderComponent.DOUBLE) if Settings.enable_unicode else EmptyComponent(),
+                    ],
+                    direction = ListComponent.DIRECTION_LEFT_TO_RIGHT,
+                ),
+                LabelComponent(
+                    "This is a <underline>label</underline> with a <invert>lot</invert> of stuff that should word-wrap!\n" +
+                    "I've placed a <invert>few <green>tabs</green></invert> and stuff here so we know it works!\n" +
+                    "What about some tabs? Let's do some <red>tab-related</red> activities~",
+                    formatted=True,
+                ),
+                RenderCounterComponent(),
+            ],
+            direction=ListComponent.DIRECTION_TOP_TO_BOTTOM,
+        )
 
     def handle_input(self, event: InputEvent) -> bool:
         if isinstance(event, KeyboardInputEvent):

@@ -15,8 +15,8 @@ class Scene:
         self.settings = settings
         self.main_loop = main_loop
 
-    def create(self) -> List["Component"]:
-        return []
+    def create(self) -> Optional["Component"]:
+        return None
 
     def destroy(self) -> None:
         pass

@@ -101,7 +101,8 @@ class MainLoop:
                     self.scene = None
                     self.components = []
                 else:
-                    self.components = self.scene.create()
+                    component = self.scene.create()
+                    self.components = [component] if component else []
 
                 # Actualize each component
                 for component in self.components:
