@@ -77,7 +77,8 @@ class RenderCounterComponent(Component):
 
     def render(self, context: RenderContext) -> None:
         self.__count += 1
-        context.draw_string(0, 0, "Rendered {} time{}!".format(self.__count, ("" if self.__count == 1 else "s")))
+        context.clear()
+        context.draw_string(0, 0, "Rendered {} time{}!".format(self.__count, ("" if self.__count == 1 else "s")), wrap=True)
         self.__rendered = True
 
     @property
