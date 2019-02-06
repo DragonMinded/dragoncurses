@@ -1426,3 +1426,99 @@ class PictureComponent(Component):
             self.__set_data_impl(data)
 
     data = property(__get_data, __set_data)
+
+
+class TextInputComponent(Component):
+
+    def __init__(self, text: str, *, allowed_characters: str, focused: bool = False, max_length: int = -1) -> None:
+        super().__init__()
+        self.__focused = focused
+        self.__cursor = len(text)
+        self.__text = text
+        self.__max_length = max_length
+        self.__characters = allowed_characters
+        self.__changed = True
+
+    @property
+    def dirty(self) -> bool:
+        return self.__changed
+
+    def render(self, context: RenderContext) -> None:
+        text = self.__text
+        if len(text) < context.bounds.width:
+            text = text + " " * (context.bounds.width - len(text))
+
+        if not self.__focused:
+            context.draw_formatted_string(0, 0, "<underline>" + text + "</underline>")
+        else:
+            if self.__cursor < 0:
+                self.__cursor = 0
+            if self.__cursor > len(self.__text):
+                self.__cursor = len(self.__text)
+            context.draw_formatted_string(0, 0, "<invert>" + text[:self.__cursor] + "</invert>" + text[self.__cursor:(self.__cursor + 1)] + "<invert>" + text[(self.__cursor + 1):] + "</invert>")
+
+        self.__changed = False
+
+    def __get_text(self) -> str:
+        return self.__text
+
+    def __set_text(self, text: str) -> None:
+        with self.lock:
+            self.__changed = True if self.__changed else (self.__text != text)
+            self.__text = text
+
+    text = property(__get_text, __set_text)
+
+    def __get_focus(self) -> str:
+        return self.__focused
+
+    def __set_focus(self, focus: str) -> None:
+        with self.lock:
+            self.__changed = True if self.__changed else (self.__focused != focus)
+            self.__focused = focus
+
+    focus = property(__get_focus, __set_focus)
+
+    def handle_input(self, event: "InputEvent") -> bool:
+        def add(char: str) -> None:
+            if self.__max_length == -1 or len(self.__text) < self.__max_length:
+                self.__text = self.__text[:self.__cursor] + char + self.__text[self.__cursor:]
+                self.__cursor += 1
+                self.__changed = True
+
+        if self.__focused:
+            if isinstance(event, KeyboardInputEvent):
+                if event.character == Keys.LEFT:
+                    if self.__cursor > 0:
+                        self.__cursor -= 1
+                        self.__changed = True
+                    return True
+                if event.character == Keys.RIGHT:
+                    if self.__cursor <= len(self.__text):
+                        self.__cursor += 1
+                        self.__changed = True
+                    return True
+                if event.character in self.__characters:
+                    add(event.character)
+                    return True
+                if event.character.upper() in self.__characters:
+                    add(event.character.upper())
+                    return True
+                if event.character.lower() in self.__characters:
+                    add(event.character.lower())
+                    return True
+                if event.character == Keys.DELETE:
+                    if self.__cursor < len(self.__text):
+                        self.__text = self.__text[:self.__cursor] + self.__text[(self.__cursor + 1):]
+                        self.__changed = True
+                    return True
+                if event.character == Keys.BACKSPACE:
+                    if self.__cursor > 0:
+                        self.__text = self.__text[:(self.__cursor - 1)] + self.__text[self.__cursor:]
+                        self.__cursor -= 1
+                        self.__changed = True
+                    return True
+        return False
+
+    def __repr__(self) -> str:
+        return "TextInputComponent(text={}, focused={})".format(repr(self.__text), "True" if self.__focused else "False")
