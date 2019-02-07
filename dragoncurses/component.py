@@ -1532,3 +1532,112 @@ class TextInputComponent(Component):
 
     def __repr__(self) -> str:
         return "TextInputComponent(text={}, focused={})".format(repr(self.__text), "True" if self.__focused else "False")
+
+
+class SelectInputComponent(Component):
+
+    def __init__(self, selected: str, options: List[str], *, focused: bool = False) -> None:
+        super().__init__()
+        self.__selected = selected
+        self.__options = options
+        self.__focused = focused
+        self.__changed = False
+        if selected not in options:
+            raise Exception("Selected value must be in options!")
+
+    def render(self, context: RenderContext) -> None:
+        # No artifacts, please!
+        context.clear()
+
+        # First, calculate how much area we have for text
+        area = context.bounds.width - 4
+        if len(self.__selected) > area:
+            # Doesn't fit, truncate.
+            if Settings.enable_unicode:
+                text = self.__selected[:(area-1)] + "\u2026"
+            else:
+                text = self.__selected[:(area-3)] + "..."
+        elif area > len(self.__selected):
+            # Fits, center
+            text = " " * int((area - len(self.__selected)) / 2) + self.__selected
+            text = text + " " * (area - len(text))
+        else:
+            # Exact, just show
+            text = self.__selected
+
+        if Settings.enable_unicode:
+            text = "\u2039 " + text + " \u203A"
+        else:
+            text = "< " + text + " >"
+
+        context.draw_string(0, 0, text, invert=self.__focused)
+        self.__changed = False
+
+    @property
+    def dirty(self) -> bool:
+        return self.__changed
+
+    @property
+    def options(self) -> List[str]:
+        return self.__options
+
+    def __get_focus(self) -> str:
+        return self.__focused
+
+    def __set_focus(self, focus: str) -> None:
+        with self.lock:
+            self.__changed = True if self.__changed else (self.__focused != focus)
+            self.__focused = focus
+
+    focus = property(__get_focus, __set_focus)
+
+    def __get_selected(self) -> str:
+        return self.__selected
+
+    def __set_selected(self, selected: str) -> None:
+        if selected not in self.__options:
+            raise Exception("Selected value must be in options!")
+        with self.lock:
+            self.__changed = True if self.__changed else (self.__selected != selected)
+            self.__selected = selected
+
+    selected = property(__get_selected, __set_selected)
+
+    def handle_input(self, event: InputEvent) -> bool:
+        def select_previous() -> None:
+            for i, option in enumerate(self.__options):
+                if option == self.__selected:
+                    if i > 0:
+                        self.__selected = self.__options[i - 1]
+                        self.__changed = True
+                    return
+
+        def select_next() -> None:
+            for i, option in enumerate(self.__options):
+                if option == self.__selected:
+                    if i < len(self.__options) - 1:
+                        self.__selected = self.__options[i + 1]
+                        self.__changed = True
+                    return
+
+        if isinstance(event, KeyboardInputEvent):
+            if self.__focused:
+                if event.character == Keys.LEFT:
+                    select_previous()
+                    return True
+                if event.character == Keys.RIGHT:
+                    select_next()
+                    return True
+        if isinstance(event, MouseInputEvent):
+            if event.button == Buttons.LEFT:
+                relx = event.x - self.location.left
+                rely = event.y - self.location.top
+                if rely == 0 and relx == 0:
+                    select_previous()
+                elif rely == 0 and relx == self.location.width - 1:
+                    select_next()
+                return True
+        return False
+
+    def __repr__(self) -> str:
+        return "SelectInputComponent(selected={}, options={}, focused={})".format(repr(self.__selected), repr(self.__options), "True" if self.__focused else "False")
