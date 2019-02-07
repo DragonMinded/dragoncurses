@@ -361,7 +361,7 @@ def main() -> int:
     def wrapped(context) -> None:
         # Run the main program loop
         with loop_config(context):
-            loop = MainLoop(context, {}, idle)
+            loop = MainLoop(context, {}, idle, realtime=True)
             loop.change_scene(WelcomeScene)
             loop.run()
 

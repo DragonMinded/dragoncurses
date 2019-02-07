@@ -12,7 +12,6 @@ from .scene import Scene
 
 @contextmanager
 def loop_config(context) -> Generator[None, None, None]:
-    context.nodelay(1)
     curses.curs_set(0)
     _, oldmask = curses.mousemask(curses.BUTTON1_RELEASED | curses.BUTTON2_RELEASED | curses.BUTTON3_RELEASED | curses.BUTTON4_RELEASED)
     curses.use_default_colors()
@@ -24,7 +23,6 @@ def loop_config(context) -> Generator[None, None, None]:
 
     curses.mousemask(oldmask)
     curses.curs_set(1)
-    context.nodelay(0)
 
 
 class MainLoop:
@@ -34,7 +32,13 @@ class MainLoop:
     class _ExitScene(Scene):
         pass
 
-    def __init__(self, context, settings: Dict[str, Any], idle_callback: Optional[Callable[["MainLoop"], None]] = None) -> None:
+    def __init__(self, context, settings: Dict[str, Any], idle_callback: Optional[Callable[["MainLoop"], None]] = None, realtime: bool = False) -> None:
+        if not realtime and idle_callback:
+            raise Exception("Cannot have idle callback without realtime mode!")
+        if realtime:
+            context.nodelay(1)
+        else:
+            context.nodelay(0)
         self.context = RenderContext(context)
         self.settings = settings
         self.scene = None
