@@ -1603,7 +1603,7 @@ class SelectInputComponent(Component):
 
     selected = property(__get_selected, __set_selected)
 
-    def handle_input(self, event: InputEvent) -> bool:
+    def handle_input(self, event: "InputEvent") -> bool:
         def select_previous() -> None:
             for i, option in enumerate(self.__options):
                 if option == self.__selected:
