@@ -247,7 +247,7 @@ class ClickableComponent(Component):
 
     callback = None
 
-    def on_click(self, callback: Callable[[Component, str], None]) -> "self":
+    def on_click(self, callback: Callable[[Component, str], bool]) -> "self":
         self.callback = callback
         return self
 
@@ -257,9 +257,13 @@ class ClickableComponent(Component):
         # instead of intercepting it, so thus overriding the public function.
         if isinstance(event, MouseInputEvent):
             if self.callback is not None:
-                self.callback(self, event.button)
-            # We still handled this regardless of notification
-            return True
+                handled = self.callback(self, event.button)
+                # Fall through to default if the callback didn't handle.
+                if handled:
+                    return True
+            else:
+                # We still handled this regardless of notification
+                return True
 
         return super().handle_input(event)
 
@@ -285,10 +289,13 @@ class HotkeyableComponent(Component):
 
                 callback = getattr(self, 'callback', None)
                 if callback is not None:
-                    callback(self, Buttons.KEY)
-
-                # We still handled this regardless of notification
-                return True
+                    handled = callback(self, Buttons.KEY)
+                    # Fall through to default if the callback didn't handle
+                    if handled:
+                        return True
+                else:
+                    # We still handled this regardless of notification
+                    return True
 
         return super().handle_input(event)
 
@@ -831,9 +838,10 @@ class DialogBoxComponent(Component):
         self.__padding = padding
 
         buttons = []
-        def __cb(button, option, callback):
+        def __cb(button, option, callback) -> bool:
             if button == Buttons.LEFT or button == Buttons.KEY:
                 callback(self, option)
+            return True
 
         for option, callback in options:
             text, hotkey = _text_to_hotkeys(option)
@@ -991,9 +999,9 @@ class PopoverMenuComponent(Component):
         self.__closedelay = 0
 
         entries = []
-        def __cb(component, button, option, callback):
+        def __cb(component, button, option, callback) -> bool:
             if self.__is_closing():
-                return
+                return True
             if button == Buttons.LEFT or button == Buttons.KEY:
                 if self.__animated:
                     def __closeaction():
@@ -1006,13 +1014,15 @@ class PopoverMenuComponent(Component):
                 else:
                     callback(self, option)
                     self.__close()
+            return True
 
-        def __new_menu(button, position, entries):
+        def __new_menu(button, position, entries) -> bool:
             if button == Buttons.LEFT or button == Buttons.KEY:
                 menu = PopoverMenuComponent(entries, animated=self.__animated)
                 menu.__parent = self
                 self.register(menu, menu.bounds.offset(position, self.bounds.width))
                 self.__children.append(menu)
+            return True
 
         position = 0
         for option, callback in options:

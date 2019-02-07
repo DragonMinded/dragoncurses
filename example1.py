@@ -88,9 +88,10 @@ class RenderCounterComponent(Component):
 
 class WelcomeScene(Scene):
 
-    def update_button(self, component: Component, button: str) -> None:
+    def update_button(self, component: Component, button: str) -> bool:
         component.text = "A <underline>b</underline>utton (pressed {}!)".format(button)
         component.textcolor = Color.RED if button == "LEFT" else Color.CYAN if button == "RIGHT" else Color.YELLOW
+        return True
 
     def create(self) -> Component:
         global clock
@@ -228,7 +229,7 @@ class WelcomeScene(Scene):
 
 class TestScene(Scene):
 
-    def pop_menu(self, component: Component, button: str) -> None:
+    def pop_menu(self, component: Component, button: str) -> bool:
         def text(text):
             component.text = text
         def color(color):
@@ -267,6 +268,7 @@ class TestScene(Scene):
             menu,
             menu.bounds.offset(3, 0),
         )
+        return True
 
     def create(self) -> Component:
         return ListComponent(
