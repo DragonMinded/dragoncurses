@@ -8,6 +8,10 @@ class Keys:
     DOWN = "KEY_DOWN"
     LEFT = "KEY_LEFT"
     RIGHT = "KEY_RIGHT"
+    PGUP = "KEY_PPAGE"
+    PGDN = "KEY_NPAGE"
+    HOME = "KEY_HOME"
+    END = "KEY_END"
 
 
 class Buttons:
