@@ -24,7 +24,7 @@ from dragoncurses.component import (
 from dragoncurses.context import Color, RenderContext, BoundingRectangle
 from dragoncurses.scene import Scene
 from dragoncurses.loop import MainLoop, loop_config
-from dragoncurses.input import InputEvent, KeyboardInputEvent, Keys
+from dragoncurses.input import InputEvent, KeyboardInputEvent, ScrollInputEvent, Keys, Directions
 from dragoncurses.settings import Settings
 
 
@@ -64,6 +64,36 @@ class HelloWorldComponent(Component):
         if isinstance(event, KeyboardInputEvent):
             if event.character == Keys.SPACE:
                 self.animation = 14
+                return True
+        return False
+
+
+class ScrollTestComponent(Component):
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.__rendered = False
+        self.__count = 0
+
+    def render(self, context: RenderContext) -> None:
+        context.clear()
+        context.draw_string(0, 0, "Scroll me!")
+        context.draw_string(1, 0, str(self.__count))
+        self.__rendered = True
+
+    @property
+    def dirty(self) -> bool:
+        return not self.__rendered
+
+    def handle_input(self, event: InputEvent) -> bool:
+        if isinstance(event, ScrollInputEvent):
+            if event.direction == Directions.UP:
+                self.__count -= 1
+                self.__rendered = False
+                return True
+            if event.direction == Directions.DOWN:
+                self.__count += 1
+                self.__rendered = False
                 return True
         return False
 
@@ -152,6 +182,7 @@ class WelcomeScene(Scene):
                             ),
                             EmptyComponent(),
                             LabelComponent("Some inverted text", invert=True),
+                            ScrollTestComponent(),
                             counter,
                         ],
                         size=4,

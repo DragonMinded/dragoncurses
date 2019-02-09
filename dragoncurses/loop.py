@@ -6,7 +6,7 @@ from _curses import error as CursesError
 from typing import Any, Callable, Dict, Generator, Optional, Type
 
 from .context import RenderContext
-from .input import KeyboardInputEvent, MouseInputEvent, Buttons
+from .input import KeyboardInputEvent, MouseInputEvent, ScrollInputEvent, Buttons, Directions
 from .scene import Scene
 
 
@@ -16,7 +16,7 @@ def loop_config(context) -> Generator[None, None, None]:
     curses.mouseinterval(0)
     _, oldmask = curses.mousemask(
         curses.BUTTON1_PRESSED | curses.BUTTON2_PRESSED | curses.BUTTON3_PRESSED | curses.BUTTON4_PRESSED |
-        curses.BUTTON1_RELEASED | curses.BUTTON2_RELEASED | curses.BUTTON3_RELEASED | curses.BUTTON4_RELEASED
+        curses.BUTTON1_RELEASED | curses.BUTTON2_RELEASED | curses.BUTTON3_RELEASED | curses.REPORT_MOUSE_POSITION
     )
     curses.use_default_colors()
 
@@ -56,7 +56,6 @@ class MainLoop:
             Buttons.LEFT: ((-1, -1), -1),
             Buttons.MIDDLE: ((-1, -1), -1),
             Buttons.RIGHT: ((-1, -1), -1),
-            Buttons.EXTRA: ((-1, -1), -1),
         }
 
     def change_scene(self, scene: Type[Scene]) -> None:
@@ -182,7 +181,7 @@ class MainLoop:
                         elif mask == curses.BUTTON3_PRESSED:
                             self.__mousestate[Buttons.RIGHT] = ((x, y), time.time())
                         elif mask == curses.BUTTON4_PRESSED:
-                            self.__mousestate[Buttons.EXTRA] = ((x, y), time.time())
+                            event = ScrollInputEvent(Directions.UP)
                         elif mask == curses.BUTTON1_RELEASED:
                             if (
                                 self.__mousestate[Buttons.LEFT][0] == (x, y) and
@@ -201,12 +200,8 @@ class MainLoop:
                                 (time.time() - self.__mousestate[Buttons.RIGHT][1]) < 1.0
                             ):
                                 event = MouseInputEvent(x, y, Buttons.RIGHT)
-                        elif mask == curses.BUTTON4_RELEASED:
-                            if (
-                                self.__mousestate[Buttons.EXTRA][0] == (x, y) and
-                                (time.time() - self.__mousestate[Buttons.EXTRA][1]) < 1.0
-                            ):
-                                event = MouseInputEvent(x, y, Buttons.EXTRA)
+                        elif mask == curses.REPORT_MOUSE_POSITION:
+                            event = ScrollInputEvent(Directions.DOWN)
                     except CursesError:
                         pass
                 else:

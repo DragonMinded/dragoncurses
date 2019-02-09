@@ -18,8 +18,12 @@ class Buttons:
     LEFT = "LEFT"
     MIDDLE = "MIDDLE"
     RIGHT = "RIGHT"
-    EXTRA = "EXTRA"
     KEY = "KEY"
+
+
+class Directions:
+    UP = "UP"
+    DOWN = "DOWN"
 
 
 class InputEvent:
@@ -42,6 +46,14 @@ class MouseInputEvent(InputEvent):
 
     def __repr__(self) -> str:
         return "MouseInputEvent(x={}, y={}, button={})".format(self.x, self.y, self.button)
+
+
+class ScrollInputEvent(InputEvent):
+    def __init__(self, direction: str) -> None:
+        self.direction = direction
+
+    def __repr__(self) -> str:
+        return "ScrollInputEvent(direction={})".format(self.direction)
 
 
 class DefocusInputEvent(InputEvent):
