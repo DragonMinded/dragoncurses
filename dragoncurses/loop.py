@@ -13,7 +13,11 @@ from .scene import Scene
 @contextmanager
 def loop_config(context) -> Generator[None, None, None]:
     curses.curs_set(0)
-    _, oldmask = curses.mousemask(curses.BUTTON1_RELEASED | curses.BUTTON2_RELEASED | curses.BUTTON3_RELEASED | curses.BUTTON4_RELEASED)
+    curses.mouseinterval(0)
+    _, oldmask = curses.mousemask(
+        curses.BUTTON1_PRESSED | curses.BUTTON2_PRESSED | curses.BUTTON3_PRESSED | curses.BUTTON4_PRESSED |
+        curses.BUTTON1_RELEASED | curses.BUTTON2_RELEASED | curses.BUTTON3_RELEASED | curses.BUTTON4_RELEASED
+    )
     curses.use_default_colors()
 
     yield
@@ -48,6 +52,12 @@ class MainLoop:
         self.__dirty = False
         self.__idle = idle_callback
         self.__last_tick = 0.0
+        self.__mousestate = {
+            Buttons.LEFT: ((-1, -1), -1),
+            Buttons.MIDDLE: ((-1, -1), -1),
+            Buttons.RIGHT: ((-1, -1), -1),
+            Buttons.EXTRA: ((-1, -1), -1),
+        }
 
     def change_scene(self, scene: Type[Scene]) -> None:
         if self.__next_scene is None:
@@ -165,14 +175,38 @@ class MainLoop:
                 elif key == "KEY_MOUSE":
                     try:
                         _, x, y, _, mask = curses.getmouse()
-                        if mask == curses.BUTTON1_RELEASED:
-                            event = MouseInputEvent(x, y, Buttons.LEFT)
+                        if mask == curses.BUTTON1_PRESSED:
+                            self.__mousestate[Buttons.LEFT] = ((x, y), time.time())
+                        elif mask == curses.BUTTON2_PRESSED:
+                            self.__mousestate[Buttons.MIDDLE] = ((x, y), time.time())
+                        elif mask == curses.BUTTON3_PRESSED:
+                            self.__mousestate[Buttons.RIGHT] = ((x, y), time.time())
+                        elif mask == curses.BUTTON4_PRESSED:
+                            self.__mousestate[Buttons.EXTRA] = ((x, y), time.time())
+                        elif mask == curses.BUTTON1_RELEASED:
+                            if (
+                                self.__mousestate[Buttons.LEFT][0] == (x, y) and
+                                (time.time() - self.__mousestate[Buttons.LEFT][1]) < 1.0
+                            ):
+                                event = MouseInputEvent(x, y, Buttons.LEFT)
                         elif mask == curses.BUTTON2_RELEASED:
-                            event = MouseInputEvent(x, y, Buttons.MIDDLE)
+                            if (
+                                self.__mousestate[Buttons.MIDDLE][0] == (x, y) and
+                                (time.time() - self.__mousestate[Buttons.MIDDLE][1]) < 1.0
+                            ):
+                                event = MouseInputEvent(x, y, Buttons.MIDDLE)
                         elif mask == curses.BUTTON3_RELEASED:
-                            event = MouseInputEvent(x, y, Buttons.RIGHT)
+                            if (
+                                self.__mousestate[Buttons.RIGHT][0] == (x, y) and
+                                (time.time() - self.__mousestate[Buttons.RIGHT][1]) < 1.0
+                            ):
+                                event = MouseInputEvent(x, y, Buttons.RIGHT)
                         elif mask == curses.BUTTON4_RELEASED:
-                            event = MouseInputEvent(x, y, Buttons.EXTRA)
+                            if (
+                                self.__mousestate[Buttons.EXTRA][0] == (x, y) and
+                                (time.time() - self.__mousestate[Buttons.EXTRA][1]) < 1.0
+                            ):
+                                event = MouseInputEvent(x, y, Buttons.EXTRA)
                     except CursesError:
                         pass
                 else:
