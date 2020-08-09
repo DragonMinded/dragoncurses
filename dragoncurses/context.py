@@ -142,11 +142,6 @@ class RenderContext:
         except CursesError:
             pass
 
-    def clear(self):
-        height, width = self.__curses_context.getmaxyx()
-        for y in range(height):
-            self.draw_string(y, 0, " " * width)
-
     @staticmethod
     def __get_wrap_points(string: str, starty: int, startx: int, bounds: BoundingRectangle) -> List[int]:
         locations = []

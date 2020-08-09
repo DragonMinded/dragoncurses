@@ -257,8 +257,8 @@ class WelcomeScene(Scene):
                         direction=ListComponent.DIRECTION_TOP_TO_BOTTOM,
                     ),
                 ],
-                size = 30,
-                direction = ListComponent.DIRECTION_LEFT_TO_RIGHT,
+                size=30,
+                direction=ListComponent.DIRECTION_LEFT_TO_RIGHT,
             ),
             location=StickyComponent.LOCATION_BOTTOM,
             size=1,
@@ -289,8 +289,10 @@ class TestScene(Scene):
     def pop_menu(self, component: Component, button: str) -> bool:
         def text(text):
             component.text = text
+
         def color(color):
             component.textcolor = color
+
         def border(color):
             component.bordercolor = color
 
@@ -343,7 +345,7 @@ class TestScene(Scene):
                         ),
                         LabelComponent("Horizontal 3"),
                     ],
-                    direction = ListComponent.DIRECTION_LEFT_TO_RIGHT,
+                    direction=ListComponent.DIRECTION_LEFT_TO_RIGHT,
                 ),
                 LabelComponent(
                     "This is a label with a lot of stuff that should word-wrap!\n" +
@@ -357,7 +359,7 @@ class TestScene(Scene):
                         BorderComponent(LabelComponent("Label 4!"), style=BorderComponent.SINGLE) if Settings.enable_unicode else EmptyComponent(),
                         BorderComponent(LabelComponent("Label 5!"), style=BorderComponent.DOUBLE) if Settings.enable_unicode else EmptyComponent(),
                     ],
-                    direction = ListComponent.DIRECTION_LEFT_TO_RIGHT,
+                    direction=ListComponent.DIRECTION_LEFT_TO_RIGHT,
                 ),
                 LabelComponent(
                     "This is a <underline>label</underline> with a <invert>lot</invert> of stuff that should word-wrap!\n" +
@@ -408,12 +410,12 @@ def thread(exit: List[Any]) -> None:
     while len(exit) == 0:
         if counter is not None:
             counter.text = "Threading works!\nCounter is {}".format(val)
-            val +=1
+            val += 1
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="A simple curses UI library.")
-    args = parser.parse_args()
+    parser.parse_args()
 
     def wrapped(context) -> None:
         # Run the main program loop

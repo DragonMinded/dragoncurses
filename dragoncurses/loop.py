@@ -32,7 +32,7 @@ def loop_config(context) -> Generator[None, None, None]:
 
 class MainLoop:
 
-    TICK_DELTA = 1/12
+    TICK_DELTA = 1 / 12
 
     class _ExitScene(Scene):
         pass
@@ -259,7 +259,6 @@ class MainLoop:
                     if not handled and self.scene is not None:
                         handled = self.scene.handle_input(event)
 
-            
             if event is None and not self.__dirty:
                 # Call the idle timeout function so main application can do work
                 if self.__idle is not None:

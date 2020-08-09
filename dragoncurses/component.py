@@ -499,7 +499,7 @@ class ListComponent(Component):
     DIRECTION_TOP_TO_BOTTOM = 'top_to_bottom'
     DIRECTION_LEFT_TO_RIGHT = 'left_to_right'
 
-    def __init__(self, components: List[Component], *, direction: str, size: Optional[int]=None) -> None:
+    def __init__(self, components: Sequence[Component], *, direction: str, size: Optional[int]=None) -> None:
         super().__init__()
         self.__components = components
         self.__size = size
@@ -890,7 +890,8 @@ class DialogBoxComponent(Component):
         self.__text = text
         self.__padding = padding
 
-        buttons = []
+        buttons: List[Component] = []
+
         def __cb(button, option, callback) -> bool:
             if button == Buttons.LEFT or button == Buttons.KEY:
                 callback(self, option)
@@ -954,7 +955,11 @@ class DialogBoxComponent(Component):
         return "DialogBoxComponent(text={})".format(self.__text)
 
 
-class MenuEntryComponent(HotkeyableComponent, ClickableComponent, Component):
+class MenuComponent(Component):
+    pass
+
+
+class MenuEntryComponent(HotkeyableComponent, ClickableComponent, MenuComponent):
 
     def __init__(self, text: str = "", *, expandable: bool = False) -> None:
         super().__init__()
@@ -1021,7 +1026,7 @@ class MenuEntryComponent(HotkeyableComponent, ClickableComponent, Component):
         return "MenuEntryComponent(text={})".format(self.__text)
 
 
-class MenuSeparatorComponent(Component):
+class MenuSeparatorComponent(MenuComponent):
 
     def __init__(self) -> None:
         super().__init__()
@@ -1051,7 +1056,7 @@ class MenuSeparatorComponent(Component):
 
 class PopoverMenuComponent(Component):
 
-    def __init__(self, options: List[Tuple[str, Any]], *, animated: bool = False) -> None:
+    def __init__(self, options: Sequence[Tuple[str, Any]], *, animated: bool = False) -> None:
         super().__init__()
         self.__parent = None
         self.__children = []
@@ -1059,7 +1064,8 @@ class PopoverMenuComponent(Component):
         self.__closecb = None
         self.__closedelay = 0
 
-        entries = []
+        entries: List[MenuComponent] = []
+
         def __cb(component, button, option, callback) -> bool:
             if self.__is_closing():  # pyre-ignore Pyre can't see that this exists.
                 return True
@@ -1207,7 +1213,7 @@ class MonochromePictureComponent(Component):
     SIZE_FULL = "SIZE_FULL"
     SIZE_HALF = "SIZE_HALF"
 
-    def __init__(self, data: List[List[bool]], *, size: Optional[str] = None, forecolor: Optional[str] = None, backcolor: Optional[str] = None) -> None:
+    def __init__(self, data: Sequence[Sequence[bool]], *, size: Optional[str] = None, forecolor: Optional[str] = None, backcolor: Optional[str] = None) -> None:
         super().__init__()
         self.__forecolor = forecolor or Color.NONE
         self.__backcolor = backcolor or Color.NONE
@@ -1304,10 +1310,10 @@ class MonochromePictureComponent(Component):
     def dirty(self) -> bool:
         return not self.__rendered
 
-    def __get_data(self) -> List[List[bool]]:
+    def __get_data(self) -> Sequence[Sequence[bool]]:
         return self.__data
 
-    def __set_data_impl(self, data: List[List[bool]]) -> None:
+    def __set_data_impl(self, data: Sequence[Sequence[bool]]) -> None:
         self.__height = len(data)
         self.__width = max(len(p) for p in data)
 
@@ -1331,7 +1337,7 @@ class MonochromePictureComponent(Component):
             if len(self.__data[i]) < desired_width:
                 self.__data[i] = [*self.__data[i], *([False] * (desired_width - len(self.__data[i])))]
 
-    def __set_data(self, data: List[List[bool]]) -> None:
+    def __set_data(self, data: Sequence[Sequence[bool]]) -> None:
         with self.lock:
             self.__set_data_impl(data)
 
@@ -1363,7 +1369,7 @@ class PictureComponent(Component):
     SIZE_FULL = "SIZE_FULL"
     SIZE_HALF = "SIZE_HALF"
 
-    def __init__(self, data: List[List[str]], *, size: Optional[str] = None) -> None:
+    def __init__(self, data: Sequence[Sequence[str]], *, size: Optional[str] = None) -> None:
         super().__init__()
         self.__size = size or self.SIZE_FULL
         if self.__size == self.SIZE_HALF and not Settings.enable_unicode:
@@ -1465,10 +1471,10 @@ class PictureComponent(Component):
     def dirty(self) -> bool:
         return not self.__rendered
 
-    def __get_data(self) -> List[List[str]]:
+    def __get_data(self) -> Sequence[Sequence[str]]:
         return self.__data
 
-    def __set_data_impl(self, data: List[List[str]]) -> None:
+    def __set_data_impl(self, data: Sequence[Sequence[str]]) -> None:
         self.__height = len(data)
         self.__width = max(len(p) for p in data)
 
@@ -1492,7 +1498,7 @@ class PictureComponent(Component):
             if len(self.__data[i]) < desired_width:
                 self.__data[i] = [*self.__data[i], *([Color.NONE] * (desired_width - len(self.__data[i])))]
 
-    def __set_data(self, data: List[List[str]]) -> None:
+    def __set_data(self, data: Sequence[Sequence[str]]) -> None:
         with self.lock:
             self.__set_data_impl(data)
 
@@ -1597,7 +1603,7 @@ class TextInputComponent(Component):
 
 class SelectInputComponent(Component):
 
-    def __init__(self, selected: str, options: List[str], *, focused: bool = False) -> None:
+    def __init__(self, selected: str, options: Sequence[str], *, focused: bool = False) -> None:
         super().__init__()
         self.__selected = selected
         self.__options = options
@@ -1615,9 +1621,9 @@ class SelectInputComponent(Component):
         if len(self.__selected) > area:
             # Doesn't fit, truncate.
             if Settings.enable_unicode:
-                text = self.__selected[:(area-1)] + "\u2026"
+                text = self.__selected[:(area - 1)] + "\u2026"
             else:
-                text = self.__selected[:(area-3)] + "..."
+                text = self.__selected[:(area - 3)] + "..."
         elif area > len(self.__selected):
             # Fits, center
             text = " " * int((area - len(self.__selected)) / 2) + self.__selected
@@ -1639,7 +1645,7 @@ class SelectInputComponent(Component):
         return self.__changed
 
     @property
-    def options(self) -> List[str]:
+    def options(self) -> Sequence[str]:
         return self.__options
 
     def __get_focus(self) -> bool:
@@ -1666,6 +1672,7 @@ class SelectInputComponent(Component):
 
     def handle_input(self, event: "InputEvent") -> Union[bool, DeferredInput]:
         options = self.__options
+
         def select_previous() -> None:
             for i, option in enumerate(options):
                 if option == self.__selected:  # pyre-ignore Pyre can't see that this exists.

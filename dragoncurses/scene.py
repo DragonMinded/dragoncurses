@@ -1,10 +1,11 @@
-from typing import Any, Dict, List, Optional, TYPE_CHECKING
+from typing import Any, Dict, Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from .loop import MainLoop
     from .component import Component
     from .input import InputEvent
     from .context import BoundingRectangle
+
 
 class Scene:
 
