@@ -1061,10 +1061,10 @@ class PopoverMenuComponent(Component):
 
         entries = []
         def __cb(component, button, option, callback) -> bool:
-            if self.__is_closing():
+            if self.__is_closing():  # pyre-ignore Pyre can't see that this exists.
                 return True
             if button == Buttons.LEFT or button == Buttons.KEY:
-                if self.__animated:
+                if self.__animated:  # pyre-ignore Pyre can't see that this exists.
                     def __closeaction():
                         callback(self, option)
                         self.__close()
@@ -1074,15 +1074,15 @@ class PopoverMenuComponent(Component):
                     self.__closedelay = 12
                 else:
                     callback(self, option)
-                    self.__close()
+                    self.__close()  # pyre-ignore Pyre can't see that this exists.
             return True
 
         def __new_menu(button, position, entries) -> bool:
             if button == Buttons.LEFT or button == Buttons.KEY:
-                menu = PopoverMenuComponent(entries, animated=self.__animated)
+                menu = PopoverMenuComponent(entries, animated=self.__animated)  # pyre-ignore Pyre can't see that this exists.
                 menu.__parent = self
                 self.register(menu, menu.bounds.offset(position, self.bounds.width))
-                self.__children.append(menu)
+                self.__children.append(menu)  # pyre-ignore Pyre can't see that this exists.
             return True
 
         position = 0
@@ -1552,8 +1552,8 @@ class TextInputComponent(Component):
 
     def handle_input(self, event: "InputEvent") -> Union[bool, DeferredInput]:
         def add(char: str) -> None:
-            if self.__max_length == -1 or len(self.__text) < self.__max_length:
-                self.__text = self.__text[:self.__cursor] + char + self.__text[self.__cursor:]
+            if self.__max_length == -1 or len(self.__text) < self.__max_length:  # pyre-ignore Pyre can't see that this exists.
+                self.__text = self.__text[:self.__cursor] + char + self.__text[self.__cursor:]  # pyre-ignore Pyre can't see that this exists.
                 self.__cursor += 1
                 self.__changed = True
 
@@ -1665,19 +1665,20 @@ class SelectInputComponent(Component):
     selected = property(__get_selected, __set_selected)
 
     def handle_input(self, event: "InputEvent") -> Union[bool, DeferredInput]:
+        options = self.__options
         def select_previous() -> None:
-            for i, option in enumerate(self.__options):
-                if option == self.__selected:
+            for i, option in enumerate(options):
+                if option == self.__selected:  # pyre-ignore Pyre can't see that this exists.
                     if i > 0:
-                        self.__selected = self.__options[i - 1]
+                        self.__selected = options[i - 1]
                         self.__changed = True
                     return
 
         def select_next() -> None:
-            for i, option in enumerate(self.__options):
-                if option == self.__selected:
-                    if i < len(self.__options) - 1:
-                        self.__selected = self.__options[i + 1]
+            for i, option in enumerate(options):
+                if option == self.__selected:  # pyre-ignore Pyre can't see that this exists.
+                    if i < len(options) - 1:
+                        self.__selected = options[i + 1]
                         self.__changed = True
                     return
 
