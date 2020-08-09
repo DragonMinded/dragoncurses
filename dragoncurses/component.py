@@ -886,7 +886,7 @@ class PaddingComponent(Component):
 
 class DialogBoxComponent(Component):
 
-    def __init__(self, text: str, options: Sequence[Tuple[str, Callable[..., Any]]], *, padding: int = 5) -> None:
+    def __init__(self, text: str, options: Sequence[Tuple[str, Callable[..., Any]]], *, padding: int = 5, formatted: bool = False, centered: bool = False) -> None:
         super().__init__()
         self.__text = text
         self.__padding = padding
@@ -912,7 +912,7 @@ class DialogBoxComponent(Component):
                 PaddingComponent(
                     StickyComponent(
                         ListComponent(buttons, direction=ListComponent.DIRECTION_LEFT_TO_RIGHT),
-                        LabelComponent(self.__text),
+                        LabelComponent(self.__text, formatted=formatted, centered=centered),
                         size=3,
                         location=StickyComponent.LOCATION_BOTTOM,
                     ),
