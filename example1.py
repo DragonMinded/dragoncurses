@@ -42,19 +42,21 @@ class HelloWorldComponent(Component):
         self.animation = 0  # type: Optional[int]
 
     def tick(self) -> None:
-        if self.animation is not None and self.animation > 0:
-            self.animation -= 1
+        animation = self.animation
+        if animation is not None and animation > 0:
+            self.animation = animation - 1
         else:
             self.animation = None
 
     def render(self, context: RenderContext) -> None:
         text = "Hello, world!"
 
-        if self.animation is None or self.animation == 0:
+        animation = self.animation
+        if animation is None or animation == 0:
             context.draw_string(0, 0, text)
         else:
             context.draw_string(0, 0, text)
-            context.draw_string(0, 13 - self.animation, text[13 - self.animation], invert=True)
+            context.draw_string(0, 13 - animation, text[13 - animation], invert=True)
 
     @property
     def dirty(self) -> bool:
@@ -70,14 +72,15 @@ class HelloWorldComponent(Component):
 
 class ScrollTestComponent(Component):
 
-    def __init__(self) -> None:
+    def __init__(self, global_capture: bool=True) -> None:
         super().__init__()
         self.__rendered = False
         self.__count = 0
+        self.__global_capture = global_capture
 
     def render(self, context: RenderContext) -> None:
         context.clear()
-        context.draw_string(0, 0, "Scroll me!")
+        context.draw_string(0, 0, "Scroll {}!".format("anywhere" if self.__global_capture else "me"))
         context.draw_string(1, 0, str(self.__count))
         self.__rendered = True
 
@@ -87,14 +90,20 @@ class ScrollTestComponent(Component):
 
     def handle_input(self, event: InputEvent) -> bool:
         if isinstance(event, ScrollInputEvent):
+            # First, if we are doing hover-scroll only, capture only
+            # the mouse events when we hover.
+            if not self.__global_capture:
+                if self.location is not None:
+                    if not self.location.contains(event.y, event.x):
+                        return False
             if event.direction == Directions.UP:
                 self.__count -= 1
                 self.__rendered = False
-                return True
+                return False if self.__global_capture else True
             if event.direction == Directions.DOWN:
                 self.__count += 1
                 self.__rendered = False
-                return True
+                return False if self.__global_capture else True
         return False
 
 
@@ -119,8 +128,9 @@ class RenderCounterComponent(Component):
 class WelcomeScene(Scene):
 
     def update_button(self, component: Component, button: str) -> bool:
-        component.text = "A <underline>b</underline>utton (pressed {}!)".format(button)
-        component.textcolor = Color.RED if button == "LEFT" else Color.CYAN if button == "RIGHT" else Color.YELLOW
+        if isinstance(component, ButtonComponent):
+            component.text = "A <underline>b</underline>utton (pressed {}!)".format(button)
+            component.textcolor = Color.RED if button == "LEFT" else Color.CYAN if button == "RIGHT" else Color.YELLOW
         return True
 
     def create(self) -> Component:
@@ -184,6 +194,7 @@ class WelcomeScene(Scene):
                             LabelComponent("Some inverted text", invert=True),
                             ScrollTestComponent(),
                             counter,
+                            BorderComponent(ScrollTestComponent(global_capture=False), style=BorderComponent.ASCII),
                         ],
                         size=4,
                         direction=ListComponent.DIRECTION_TOP_TO_BOTTOM,

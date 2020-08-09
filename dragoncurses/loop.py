@@ -5,7 +5,8 @@ from contextlib import contextmanager
 from _curses import error as CursesError
 from typing import Any, Callable, Dict, Generator, Optional, Type
 
-from .context import RenderContext
+from .context import BoundingRectangle, RenderContext
+from .component import Component
 from .input import KeyboardInputEvent, MouseInputEvent, ScrollInputEvent, Buttons, Directions
 from .scene import Scene
 
@@ -181,7 +182,7 @@ class MainLoop:
                         elif mask == curses.BUTTON3_PRESSED:
                             self.__mousestate[Buttons.RIGHT] = ((x, y), time.time())
                         elif mask == curses.BUTTON4_PRESSED:
-                            event = ScrollInputEvent(Directions.UP)
+                            event = ScrollInputEvent(x, y, Directions.UP)
                         elif mask == curses.BUTTON1_RELEASED:
                             if (
                                 self.__mousestate[Buttons.LEFT][0] == (x, y) and
@@ -201,7 +202,7 @@ class MainLoop:
                             ):
                                 event = MouseInputEvent(x, y, Buttons.RIGHT)
                         elif mask == curses.REPORT_MOUSE_POSITION:
-                            event = ScrollInputEvent(Directions.DOWN)
+                            event = ScrollInputEvent(x, y, Directions.DOWN)
                     except CursesError:
                         pass
                 else:

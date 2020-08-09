@@ -1,6 +1,6 @@
 from threading import Lock
 from _curses import error as CursesError
-from typing import Any, Callable, Dict, List, Optional, Tuple, TYPE_CHECKING
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, TypeVar, TYPE_CHECKING
 
 from .input import Buttons, Keys, MouseInputEvent, KeyboardInputEvent, DefocusInputEvent
 from .context import Color, RenderContext, BoundingRectangle
@@ -116,6 +116,9 @@ class Component:
 
     def __repr__(self) -> str:
         return "{}()".format(self.__class__.__name__)
+
+
+ComponentT = TypeVar("ComponentT", bound=Component)
 
 
 class EmptyComponent(Component):
@@ -247,7 +250,7 @@ class ClickableComponent(Component):
 
     callback = None
 
-    def on_click(self, callback: Callable[[Component, str], bool]) -> "self":
+    def on_click(self: ComponentT, callback: Callable[[Component, str], bool]) -> ComponentT:
         self.callback = callback
         return self
 
@@ -272,7 +275,7 @@ class HotkeyableComponent(Component):
 
     hotkey = None
 
-    def set_hotkey(self, key: str) -> "self":
+    def set_hotkey(self: ComponentT, key: str) -> ComponentT:
         if key.isalnum():
             self.hotkey = key.lower()
         return self
@@ -328,7 +331,7 @@ class ButtonComponent(HotkeyableComponent, ClickableComponent, Component):
         self.__border.tick()
 
     def __get_text(self) -> str:
-        return self.__label.text  # pyre-ignore Pyre doesn't understand properties...
+        return self.__label.text
 
     def __set_text(self, text: str) -> None:
         with self.lock:
@@ -337,7 +340,7 @@ class ButtonComponent(HotkeyableComponent, ClickableComponent, Component):
     text = property(__get_text, __set_text)
 
     def __get_textcolor(self) -> str:
-        return self.__label.textcolor  # pyre-ignore Pyre doesn't understand properties...
+        return self.__label.textcolor
 
     def __set_textcolor(self, color: str) -> None:
         with self.lock:
@@ -346,7 +349,7 @@ class ButtonComponent(HotkeyableComponent, ClickableComponent, Component):
     textcolor = property(__get_textcolor, __set_textcolor)
 
     def __get_bordercolor(self) -> str:
-        return self.__border.bordercolor  # pyre-ignore Pyre doesn't understand properties...
+        return self.__border.bordercolor
 
     def __set_bordercolor(self, color: str) -> None:
         with self.lock:
@@ -556,6 +559,8 @@ class ListComponent(Component):
                 raise ComponentException("Invalid direction {}".format(self.__direction))
         else:
             size = self.__size
+        if size is None:
+            raise Exception('Logic error!')
         if size < 1:
             size = 1
         return size
@@ -832,7 +837,7 @@ class PaddingComponent(Component):
 
 class DialogBoxComponent(Component):
 
-    def __init__(self, text: str, options: Tuple[str, Callable[[], None]], *, padding: int = 5) -> None:
+    def __init__(self, text: str, options: Sequence[Tuple[str, Callable[[], None]]], *, padding: int = 5) -> None:
         super().__init__()
         self.__text = text
         self.__padding = padding
@@ -1479,10 +1484,10 @@ class TextInputComponent(Component):
 
     text = property(__get_text, __set_text)
 
-    def __get_focus(self) -> str:
+    def __get_focus(self) -> bool:
         return self.__focused
 
-    def __set_focus(self, focus: str) -> None:
+    def __set_focus(self, focus: bool) -> None:
         with self.lock:
             self.__changed = True if self.__changed else (self.__focused != focus)
             self.__focused = focus
@@ -1581,10 +1586,10 @@ class SelectInputComponent(Component):
     def options(self) -> List[str]:
         return self.__options
 
-    def __get_focus(self) -> str:
+    def __get_focus(self) -> bool:
         return self.__focused
 
-    def __set_focus(self, focus: str) -> None:
+    def __set_focus(self, focus: bool) -> None:
         with self.lock:
             self.__changed = True if self.__changed else (self.__focused != focus)
             self.__focused = focus
