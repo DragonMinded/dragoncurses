@@ -1,6 +1,6 @@
 from threading import Lock
 from _curses import error as CursesError
-from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, TypeVar, TYPE_CHECKING
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, TypeVar, Union, TYPE_CHECKING
 
 from .input import Buttons, Keys, MouseInputEvent, KeyboardInputEvent, DefocusInputEvent
 from .context import Color, RenderContext, BoundingRectangle
@@ -13,6 +13,9 @@ if TYPE_CHECKING:
 
 class ComponentException(Exception):
     pass
+
+
+DeferredInput = Callable[[], bool]
 
 
 class Component:
@@ -94,7 +97,7 @@ class Component:
         """
         pass
 
-    def _handle_input(self, event: "InputEvent") -> bool:
+    def _handle_input(self, event: "InputEvent") -> Union[bool, DeferredInput]:
         if isinstance(event, MouseInputEvent):
             if self.location is not None:
                 if self.location.contains(event.y, event.x):
@@ -106,11 +109,18 @@ class Component:
             # Should never happen, but if location isn't set we don't handle mouse
             return False
         else:
+            # Ask the control's override to process the input, returning whether
+            # it handled the input or not, or if it wants to be called back as a
+            # deferred input if no other controls handle it.
             return self.handle_input(event)
 
-    def handle_input(self, event: "InputEvent") -> bool:
+    def handle_input(self, event: "InputEvent") -> Union[bool, DeferredInput]:
         """
-        Override this in your subclass to handle input.
+        Override this in your subclass to handle input. Return a True if your
+        control handled the input (it will not be propagated futher). Return a
+        False if your control did not handle the input (it will be propagated
+        to other components). Return a DeferredInput callback if you wish to
+        handle the input as long as no other control handles the input first.
         """
         return False
 
@@ -254,7 +264,7 @@ class ClickableComponent(Component):
         self.callback = callback
         return self
 
-    def handle_input(self, event: "InputEvent") -> bool:
+    def handle_input(self, event: "InputEvent") -> Union[bool, DeferredInput]:
         # Overrides handle_input instead of _handle_input because this is
         # meant to be used as either a mixin. This handles input entirely,
         # instead of intercepting it, so thus overriding the public function.
@@ -262,8 +272,8 @@ class ClickableComponent(Component):
             if self.callback is not None:
                 handled = self.callback(self, event.button)
                 # Fall through to default if the callback didn't handle.
-                if handled:
-                    return True
+                if bool(handled):
+                    return handled
             else:
                 # We still handled this regardless of notification
                 return True
@@ -280,7 +290,7 @@ class HotkeyableComponent(Component):
             self.hotkey = key.lower()
         return self
 
-    def handle_input(self, event: "InputEvent") -> bool:
+    def handle_input(self, event: "InputEvent") -> Union[bool, DeferredInput]:
         # Overrides handle_input instead of _handle_input because this is
         # meant to be used as either a mixin. This handles input entirely,
         # instead of intercepting it, so thus overriding the public function.
@@ -294,8 +304,8 @@ class HotkeyableComponent(Component):
                 if callback is not None:
                     handled = callback(self, Buttons.KEY)
                     # Fall through to default if the callback didn't handle
-                    if handled:
-                        return True
+                    if bool(handled):
+                        return handled
                 else:
                     # We still handled this regardless of notification
                     return True
@@ -477,7 +487,7 @@ class BorderComponent(Component):
 
     bordercolor = property(__get_color, __set_color)
 
-    def handle_input(self, event: "InputEvent") -> bool:
+    def handle_input(self, event: "InputEvent") -> Union[bool, DeferredInput]:
         return self.__component._handle_input(event)
 
     def __repr__(self) -> str:
@@ -611,12 +621,31 @@ class ListComponent(Component):
             offset += size
             component._render(context, bounds)
 
-    def handle_input(self, event: "InputEvent") -> bool:
+    def handle_input(self, event: "InputEvent") -> Union[bool, DeferredInput]:
+        # First, try all the controls we manage, seeing if any of them
+        # handle the input. If any defer, save it for later.
+        deferred: List[DeferredInput] = []
         for component in self.__components:
             handled = component._handle_input(event)
-            if handled:
-                return True
-        return False
+            if isinstance(handled, bool):
+                if handled:
+                    return handled
+            else:
+                deferred.append(handled)
+
+        # Nobody deferred, and we didn't get any controls that handled
+        # the input, so state that.
+        if not deferred:
+            return False
+
+        # Create a function that loops through our deferred controls and
+        # tries each one until we find one that handles the input.
+        def _defer() -> bool:
+            for callback in deferred:
+                if callback():
+                    return True
+            return False
+        return _defer
 
     def __repr__(self) -> str:
         return "ListComponent({}, direction={})".format(",".join(repr(c) for c in self.__components), self.__direction)
@@ -754,12 +783,31 @@ class StickyComponent(Component):
             if cbounds.width > 0 and cbounds.height > 0:
                 component._render(context, cbounds)
 
-    def handle_input(self, event: "InputEvent") -> bool:
+    def handle_input(self, event: "InputEvent") -> Union[bool, DeferredInput]:
+        # First, try all the controls we manage, seeing if any of them
+        # handle the input. If any defer, save it for later.
+        deferred: List[DeferredInput] = []
         for component in self.__components:
             handled = component._handle_input(event)
-            if handled:
-                return True
-        return False
+            if isinstance(handled, bool):
+                if handled:
+                    return handled
+            else:
+                deferred.append(handled)
+
+        # Nobody deferred, and we didn't get any controls that handled
+        # the input, so state that.
+        if not deferred:
+            return False
+
+        # Create a function that loops through our deferred controls and
+        # tries each one until we find one that handles the input.
+        def _defer() -> bool:
+            for callback in deferred:
+                if callback():
+                    return True
+            return False
+        return _defer
 
     def __repr__(self) -> str:
         return "StickyComponent({}, location={})".format(",".join(repr(c) for c in self.__components), self.__location)
@@ -828,7 +876,7 @@ class PaddingComponent(Component):
 
         self.__component._render(context, bounds)
 
-    def handle_input(self, event: "InputEvent") -> bool:
+    def handle_input(self, event: "InputEvent") -> Union[bool, DeferredInput]:
         return self.__component._handle_input(event)
 
     def __repr__(self) -> str:
@@ -837,7 +885,7 @@ class PaddingComponent(Component):
 
 class DialogBoxComponent(Component):
 
-    def __init__(self, text: str, options: Sequence[Tuple[str, Callable[[], None]]], *, padding: int = 5) -> None:
+    def __init__(self, text: str, options: Sequence[Tuple[str, Callable[..., Any]]], *, padding: int = 5) -> None:
         super().__init__()
         self.__text = text
         self.__padding = padding
@@ -888,11 +936,19 @@ class DialogBoxComponent(Component):
     def render(self, context: RenderContext) -> None:
         self.__component._render(context, context.bounds)
 
-    def handle_input(self, event: "InputEvent") -> bool:
-        self.__component._handle_input(event)
-        # Swallow events, since we don't want this to be closeable or to allow clicks
-        # behind it.
-        return True
+    def handle_input(self, event: "InputEvent") -> Union[bool, DeferredInput]:
+        handled = self.__component._handle_input(event)
+        if isinstance(handled, bool):
+            # Swallow events, since we don't want this to be closeable or to allow clicks
+            # behind it.
+            return True
+        else:
+            # Return the deferred input callback to be processed. Swallow inputs on this
+            # as well.
+            def _defer() -> bool:
+                handled()
+                return True
+            return _defer
 
     def __repr__(self) -> str:
         return "DialogBoxComponent(text={})".format(self.__text)
@@ -1112,7 +1168,7 @@ class PopoverMenuComponent(Component):
                 return True
         return False
 
-    def handle_input(self, event: "InputEvent") -> bool:
+    def handle_input(self, event: "InputEvent") -> Union[bool, DeferredInput]:
         # If we're closing, swallow ALL inputs so we can't double-choose
         if self.__is_closing():
             return True
@@ -1494,7 +1550,7 @@ class TextInputComponent(Component):
 
     focus = property(__get_focus, __set_focus)
 
-    def handle_input(self, event: "InputEvent") -> bool:
+    def handle_input(self, event: "InputEvent") -> Union[bool, DeferredInput]:
         def add(char: str) -> None:
             if self.__max_length == -1 or len(self.__text) < self.__max_length:
                 self.__text = self.__text[:self.__cursor] + char + self.__text[self.__cursor:]
@@ -1608,7 +1664,7 @@ class SelectInputComponent(Component):
 
     selected = property(__get_selected, __set_selected)
 
-    def handle_input(self, event: "InputEvent") -> bool:
+    def handle_input(self, event: "InputEvent") -> Union[bool, DeferredInput]:
         def select_previous() -> None:
             for i, option in enumerate(self.__options):
                 if option == self.__selected:

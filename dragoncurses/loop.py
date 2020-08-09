@@ -3,10 +3,10 @@ import time
 
 from contextlib import contextmanager
 from _curses import error as CursesError
-from typing import Any, Callable, Dict, Generator, Optional, Type
+from typing import Any, Callable, Dict, Generator, List, Optional, Type
 
 from .context import BoundingRectangle, RenderContext
-from .component import Component
+from .component import Component, DeferredInput
 from .input import KeyboardInputEvent, MouseInputEvent, ScrollInputEvent, Buttons, Directions
 from .scene import Scene
 
@@ -209,24 +209,53 @@ class MainLoop:
                     event = KeyboardInputEvent(key)
 
                 if event is not None:
-                    # First, handle registered components
-                    handled = False
+                    handled: bool = False
+                    deferred: List[DeferredInput] = []
 
+                    # First, handle registered components
                     # Registered components are usually some sort of popover, so prioritize
                     # newest (topmost) over oldest (bottommost).
                     for (component, _, _) in reversed(self.registered_components):
+                        # Bail if we've already handled this input
                         if handled:
                             break
-                        handled = component._handle_input(event)
+                        _handled = component._handle_input(event)
+
+                        # If this control wants to be deferred, add it to the list
+                        # and then try the next control. Otherwise, handle the input
+                        # as normal.
+                        if isinstance(_handled, bool):
+                            handled = _handled
+                        else:
+                            deferred.append(_handled)
 
                     # Now, handle standard drawn components
                     for component in self.components:
                         # Bail if we've already handled this input
                         if handled:
                             break
-                        handled = component._handle_input(event)
+                        _handled = component._handle_input(event)
 
-                    # Finally, handle scene-global hotkeys
+                        # If this control wants to be deferred, add it to the list
+                        # and then try the next control. Otherwise, handle the input
+                        # as normal.
+                        if isinstance(_handled, bool):
+                            handled = _handled
+                        else:
+                            deferred.append(_handled)
+
+                    # Now, call deferred components, prioritizing the first
+                    # one we find.
+                    if not handled and deferred:
+                        for callback in deferred:
+                            # Bail if we've already handled this inpuit
+                            if handled:
+                                break
+
+                            # Run the control's deferred input callback
+                            handled = callback()
+
+                    # Finally, handle scene-global input
                     if not handled and self.scene is not None:
                         handled = self.scene.handle_input(event)
 

@@ -5,10 +5,11 @@ import sys
 import time
 
 from threading import Thread
-from typing import List, Optional, Any
+from typing import List, Optional, Union, Any
 
 from dragoncurses.component import (
     Component,
+    DeferredInput,
     LabelComponent,
     BorderComponent,
     ButtonComponent,
@@ -88,22 +89,36 @@ class ScrollTestComponent(Component):
     def dirty(self) -> bool:
         return not self.__rendered
 
-    def handle_input(self, event: InputEvent) -> bool:
+    def _deferred_scroll_up(self) -> bool:
+        self.__count -= 1
+        self.__rendered = False
+        return True
+
+    def _deferred_scroll_down(self) -> bool:
+        self.__count += 1
+        self.__rendered = False
+        return True
+
+    def handle_input(self, event: InputEvent) -> Union[bool, DeferredInput]:
         if isinstance(event, ScrollInputEvent):
-            # First, if we are doing hover-scroll only, capture only
-            # the mouse events when we hover.
             if not self.__global_capture:
+                # If we are doing hover-scroll only, capture only
+                # the mouse events when we hover.
                 if self.location is not None:
                     if not self.location.contains(event.y, event.x):
                         return False
-            if event.direction == Directions.UP:
-                self.__count -= 1
-                self.__rendered = False
-                return False if self.__global_capture else True
-            if event.direction == Directions.DOWN:
-                self.__count += 1
-                self.__rendered = False
-                return False if self.__global_capture else True
+                if event.direction == Directions.UP:
+                    return self._deferred_scroll_up()
+                if event.direction == Directions.DOWN:
+                    return self._deferred_scroll_down()
+            else:
+                # If we are doing global scroll, capture only if
+                # we haven't handled the event elsewhere.
+                if event.direction == Directions.UP:
+                    return self._deferred_scroll_up
+                if event.direction == Directions.DOWN:
+                    return self._deferred_scroll_down
+
         return False
 
 
