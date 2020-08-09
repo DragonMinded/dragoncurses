@@ -1,5 +1,4 @@
 import argparse
-import curses
 import os
 import sys
 import time
@@ -24,7 +23,7 @@ from dragoncurses.component import (
 )
 from dragoncurses.context import Color, RenderContext, BoundingRectangle
 from dragoncurses.scene import Scene
-from dragoncurses.loop import MainLoop, loop_config
+from dragoncurses.loop import MainLoop, execute
 from dragoncurses.input import InputEvent, KeyboardInputEvent, ScrollInputEvent, Keys, Directions
 from dragoncurses.settings import Settings
 
@@ -417,19 +416,14 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="A simple curses UI library.")
     parser.parse_args()
 
-    def wrapped(context) -> None:
-        # Run the main program loop
-        with loop_config(context):
-            loop = MainLoop(context, {}, idle, realtime=True)
-            loop.change_scene(WelcomeScene)
-            loop.run()
-
     exitthread = []
     t = Thread(target=thread, args=(exitthread,))
     t.start()
 
     os.environ.setdefault('ESCDELAY', '0')
-    curses.wrapper(wrapped)
+
+    # Run the main program loop, starting with the welcome scene
+    execute(WelcomeScene, idle_callback=idle, realtime=True)
 
     exitthread.append('exit')
 

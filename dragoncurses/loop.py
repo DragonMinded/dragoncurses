@@ -30,6 +30,17 @@ def loop_config(context) -> Generator[None, None, None]:
     curses.curs_set(1)
 
 
+def execute(start_scene: Type[Scene], settings: Optional[Dict[str, Any]] = None, idle_callback: Optional[Callable[["MainLoop"], None]] = None, realtime: bool = False) -> None:
+    def wrapped(context) -> None:
+        # Run the main program loop
+        with loop_config(context):
+            loop = MainLoop(context, settings if settings is not None else {}, idle_callback, realtime=realtime)
+            loop.change_scene(start_scene)
+            loop.run()
+
+    curses.wrapper(wrapped)
+
+
 class MainLoop:
 
     TICK_DELTA = 1 / 12
