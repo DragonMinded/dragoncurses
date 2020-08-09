@@ -223,7 +223,8 @@ class RenderContext:
         backcolor: str=Color.NONE,
         invert: bool=False,
         underline: bool=False,
-        wrap: bool=False
+        wrap: bool=False,
+        centered: bool=False,
     ) -> None:
         attributes = curses.color_pair(self.__get_color(forecolor, backcolor))
         if invert:
@@ -247,8 +248,22 @@ class RenderContext:
 
         # Display each chunk in the proper spot.
         for wrap_point in wrap_points:
+            chunk = string[last_pos:wrap_point]
+            if x == 0:
+                chunklen = len(chunk)
+
+                # Calculate centering for this chunk
+                offset = 0
+                if centered:
+                    if chunklen < self.bounds.width:
+                        offset = int((self.bounds.width - chunklen) / 2)
+            else:
+                # Disable centering for this line if we start on a non-zero x
+                offset = 0
+
+            # Display it!
             try:
-                self.__curses_context.addstr(y, x, string[last_pos:wrap_point], attributes)
+                self.__curses_context.addstr(y, x + offset, chunk, attributes)
             except CursesError:
                 pass
             last_pos = wrap_point
@@ -291,18 +306,43 @@ class RenderContext:
         x: int,
         string: str,
         *,
-        wrap: bool=False
+        wrap: bool=False,
+        centered: bool=False,
     ) -> None:
         attributes = 0
         last_pos = 0
+        length_part = 0
         colors = [self.__get_color(Color.NONE, Color.NONE)]
         parts = RenderContext.__split_formatted_string(string)
+        rawtext = "".join(RenderContext.__sanitize(part) for part in parts if not (part[:1] == "<" and part[-1:] == ">"))
         if wrap:
-            rawtext = "".join(RenderContext.__sanitize(part) for part in parts if not (part[:1] == "<" and part[-1:] == ">"))
             wrap_points = RenderContext.__get_wrap_points(rawtext, y, x, self.bounds)
+            if wrap_points:
+                lengths = [
+                    wrap_points[0] - x,
+                    *[(wrap_points[i] - wrap_points[i - 1]) for i in range(1, len(wrap_points))],
+                    len(rawtext) - wrap_points[-1],
+                ]
+            else:
+                lengths = [len(rawtext)]
+
+            # Only center first line if we're starting at the leftmost column.
+            if centered and x == 0:
+                if lengths[length_part] < self.bounds.width:
+                    x += int((self.bounds.width - lengths[length_part]) / 2)
         else:
             wrap_points = []
-            self.__curses_context.move(y, x)
+            lengths = []
+            offset = 0
+
+            # Disable centering if we start from non-zero offset.
+            if x == 0:
+                chunklen = len(rawtext)
+                if centered:
+                    if chunklen < self.bounds.width:
+                        offset = int((self.bounds.width - chunklen) / 2)
+
+            self.__curses_context.move(y, x + offset)
 
         for part in parts:
             if part[:2] == "</" and part[-1:] == ">":
@@ -356,6 +396,10 @@ class RenderContext:
                             last_pos += amount
                             y += 1
                             x = 0
+                            if centered:
+                                length_part += 1
+                                if len(lengths) > length_part and lengths[length_part] < self.bounds.width:
+                                    x += int((self.bounds.width - lengths[length_part]) / 2)
                         else:
                             try:
                                 self.__curses_context.addstr(y, x, text, attributes | curses.color_pair(colors[-1]))

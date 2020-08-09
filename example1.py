@@ -255,6 +255,21 @@ class WelcomeScene(Scene):
                         ],
                         direction=ListComponent.DIRECTION_TOP_TO_BOTTOM,
                     ),
+                    BorderComponent(
+                        LabelComponent(
+                            "centered text\n\nthis is a really long string that will be wrapped",
+                            centered=True,
+                        ),
+                        style=BorderComponent.ASCII,
+                    ),
+                    BorderComponent(
+                        LabelComponent(
+                            "formatted <red>centered</red> <blue>text</blue>\n\nthis is a really long string that will be <underline>wrapped</underline>",
+                            formatted=True,
+                            centered=True,
+                        ),
+                        style=BorderComponent.ASCII,
+                    )
                 ],
                 size=30,
                 direction=ListComponent.DIRECTION_LEFT_TO_RIGHT,

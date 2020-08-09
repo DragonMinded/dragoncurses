@@ -173,7 +173,7 @@ def _text_to_hotkeys(text: str) -> Tuple[str, Optional[str]]:
 
 class LabelComponent(Component):
 
-    def __init__(self, text: str = "", *, textcolor: Optional[str] = None, backcolor: Optional[str] = None, invert: bool = False, formatted: bool = False) -> None:
+    def __init__(self, text: str = "", *, textcolor: Optional[str] = None, backcolor: Optional[str] = None, invert: bool = False, formatted: bool = False, centered: bool = False) -> None:
         super().__init__()
         self.__text = text
         self.__forecolor = textcolor or Color.NONE
@@ -181,6 +181,7 @@ class LabelComponent(Component):
         self.__invert = invert
         self.__rendered = False
         self.__formatted = formatted
+        self.__centered = centered
 
     def render(self, context: RenderContext) -> None:
         if self.__invert or (self.__backcolor != Color.NONE):
@@ -191,7 +192,7 @@ class LabelComponent(Component):
             # Erase the background because labels aren't clear.
             context.clear()
 
-        # Display differently depending on if the test is formatted or not
+        # Display differently depending on if the text is formatted or not
         if self.__formatted:
             if self.__invert:
                 pre = "<invert>"
@@ -202,9 +203,9 @@ class LabelComponent(Component):
             if self.__forecolor != Color.NONE or self.__backcolor != Color.NONE:
                 pre = pre + "<{},{}>".format(self.__forecolor.lower(), self.__backcolor.lower())
                 post = "</{},{}>".format(self.__forecolor.lower(), self.__backcolor.lower()) + post
-            context.draw_formatted_string(0, 0, pre + self.__text + post, wrap=True)
+            context.draw_formatted_string(0, 0, pre + self.__text + post, wrap=True, centered=self.__centered)
         else:
-            context.draw_string(0, 0, self.__text, forecolor=self.__forecolor, backcolor=self.__backcolor, invert=self.__invert, wrap=True)
+            context.draw_string(0, 0, self.__text, forecolor=self.__forecolor, backcolor=self.__backcolor, invert=self.__invert, wrap=True, centered=self.__centered)
 
         self.__rendered = True
 
@@ -315,9 +316,9 @@ class HotkeyableComponent(Component):
 
 class ButtonComponent(HotkeyableComponent, ClickableComponent, Component):
 
-    def __init__(self, text: str = "", *, textcolor: Optional[str] = None, bordercolor: Optional[str] = None, formatted: bool = False) -> None:
+    def __init__(self, text: str = "", *, textcolor: Optional[str] = None, bordercolor: Optional[str] = None, formatted: bool = False, centered: bool = False) -> None:
         super().__init__()
-        self.__label = LabelComponent(text, textcolor=textcolor, formatted=formatted)
+        self.__label = LabelComponent(text, textcolor=textcolor, formatted=formatted, centered=centered)
         self.__border = BorderComponent(
             PaddingComponent(self.__label, horizontalpadding=1),
             style=BorderComponent.DOUBLE if Settings.enable_unicode else BorderComponent.ASCII,
