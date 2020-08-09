@@ -1711,3 +1711,58 @@ class SelectInputComponent(Component):
 
     def __repr__(self) -> str:
         return "SelectInputComponent(selected={}, options={}, focused={})".format(repr(self.__selected), repr(self.__options), "True" if self.__focused else "False")
+
+
+class CenteredComponent(Component):
+    def __init__(self, component: Component, *, width: int, height: int) -> None:
+        super().__init__()
+        self.__component = component
+        self.__width = width
+        self.__height = height
+
+    @property
+    def dirty(self) -> bool:
+        return self.__component.dirty
+
+    def attach(self, scene: "Scene", settings: Dict[str, Any]) -> None:
+        self.__component._attach(scene, settings)
+
+    def detach(self) -> None:
+        self.__component._detach()
+
+    def tick(self) -> None:
+        self.__component.tick()
+
+    def render(self, context: RenderContext) -> None:
+        if self.__width < context.bounds.width:
+            xpos = int((context.bounds.width - self.__width) / 2)
+            width = self.__width
+        else:
+            xpos = 0
+            width = context.bounds.width
+
+        if self.__height < context.bounds.height:
+            ypos = int((context.bounds.height - self.__height) / 2)
+            height = self.__height
+        else:
+            ypos = 0
+            height = context.bounds.height
+
+        context.clear()
+        bounds = BoundingRectangle(
+            top=context.bounds.top + ypos,
+            bottom=context.bounds.top + ypos + height,
+            left=context.bounds.left + xpos,
+            right=context.bounds.left + xpos + width,
+        )
+
+        if bounds.width <= 0 or bounds.height <= 0:
+            return
+
+        self.__component._render(context, bounds)
+
+    def handle_input(self, event: "InputEvent") -> Union[bool, DeferredInput]:
+        return self.__component._handle_input(event)
+
+    def __repr__(self) -> str:
+        return "CenteredComponent({})".format(repr(self.__component))
