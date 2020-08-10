@@ -886,10 +886,11 @@ class PaddingComponent(Component):
 
 class DialogBoxComponent(Component):
 
-    def __init__(self, text: str, options: Sequence[Tuple[str, Callable[..., Any]]], *, padding: int = 5, formatted: bool = False, centered: bool = False) -> None:
+    def __init__(self, text: str, options: Sequence[Tuple[str, Callable[..., Any]]], *, padding: int = 5, formatted: bool = False, centered: bool = False, escape_option: Optional[str] = None) -> None:
         super().__init__()
         self.__text = text
         self.__padding = padding
+        self.__escape_callback: Optional[Callable[..., Any]] = None
 
         buttons: List[Component] = []
 
@@ -905,6 +906,8 @@ class DialogBoxComponent(Component):
             )
             if hotkey is not None:
                 entry = entry.set_hotkey(hotkey)
+            if option == escape_option:
+                self.__escape_callback = lambda: __cb(Buttons.KEY, option, callback)
             buttons.append(PaddingComponent(entry, horizontalpadding=1))
 
         self.__component = PaddingComponent(
@@ -939,6 +942,11 @@ class DialogBoxComponent(Component):
         self.__component._render(context, context.bounds)
 
     def handle_input(self, event: "InputEvent") -> Union[bool, DeferredInput]:
+        if isinstance(event, KeyboardInputEvent):
+            if event.character == Keys.ESCAPE:
+                if self.__escape_callback is not None:
+                    self.__escape_callback()
+                    return True
         handled = self.__component._handle_input(event)
         if isinstance(handled, bool):
             # Swallow events, since we don't want this to be closeable or to allow clicks

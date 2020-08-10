@@ -288,6 +288,7 @@ class WelcomeScene(Scene):
                             ('&Yes', lambda component, option: self.main_loop.exit()),
                             ('&No', lambda component, option: self.unregister_component(component)),
                         ],
+                        escape_option="&No",
                     )
                 )
 
@@ -396,6 +397,7 @@ class TestScene(Scene):
                             ('&Yes', lambda component, option: self.main_loop.exit()),
                             ('&No', lambda component, option: self.unregister_component(component)),
                         ],
+                        escape_option="&No",
                     )
                 )
 
