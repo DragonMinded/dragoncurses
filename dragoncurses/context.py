@@ -194,7 +194,7 @@ class RenderContext:
                     if i > 0 and i < (len(string) - 1):
                         if string[i - 1].isalnum() and string[i + 1].isalnum():
                             possibilities.append(i + 1)
-                            i = i + 1
+                    i += 1
                 else:
                     # Regular character, don't care
                     i += 1
