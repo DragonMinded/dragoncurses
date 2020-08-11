@@ -22,11 +22,13 @@ class Scene:
     def destroy(self) -> None:
         pass
 
-    def register_component(self, component: "Component", location: Optional["BoundingRectangle"] = None, parent: Optional["Component"] = None) -> None:
+    def register_component(self, component: "Component", location: Optional["BoundingRectangle"] = None, parent: Optional["Component"] = None) -> bool:
         self.main_loop.register_component(component, location, parent)
+        return True
 
-    def unregister_component(self, component: "Component") -> None:
+    def unregister_component(self, component: "Component") -> bool:
         self.main_loop.unregister_component(component)
+        return True
 
     def tick(self) -> None:
         pass

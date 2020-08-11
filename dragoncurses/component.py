@@ -1379,7 +1379,7 @@ class PictureComponent(Component):
     SIZE_FULL = "SIZE_FULL"
     SIZE_HALF = "SIZE_HALF"
 
-    def __init__(self, data: Sequence[Sequence[str]], *, size: Optional[str] = None) -> None:
+    def __init__(self, data: Sequence[Sequence[Color]], *, size: Optional[str] = None) -> None:
         super().__init__()
         self.__size = size or self.SIZE_FULL
         if self.__size == self.SIZE_HALF and not Settings.enable_unicode:
@@ -1481,10 +1481,10 @@ class PictureComponent(Component):
     def dirty(self) -> bool:
         return not self.__rendered
 
-    def __get_data(self) -> Sequence[Sequence[str]]:
+    def __get_data(self) -> Sequence[Sequence[Color]]:
         return self.__data
 
-    def __set_data_impl(self, data: Sequence[Sequence[str]]) -> None:
+    def __set_data_impl(self, data: Sequence[Sequence[Color]]) -> None:
         self.__height = len(data)
         self.__width = max(len(p) for p in data)
 
@@ -1508,7 +1508,7 @@ class PictureComponent(Component):
             if len(self.__data[i]) < desired_width:
                 self.__data[i] = [*self.__data[i], *([Color.NONE] * (desired_width - len(self.__data[i])))]
 
-    def __set_data(self, data: Sequence[Sequence[str]]) -> None:
+    def __set_data(self, data: Sequence[Sequence[Color]]) -> None:
         with self.lock:
             self.__set_data_impl(data)
 
