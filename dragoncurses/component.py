@@ -1,6 +1,6 @@
 from threading import Lock
 from _curses import error as CursesError
-from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, TypeVar, Union, TYPE_CHECKING
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Type, TypeVar, Union, TYPE_CHECKING
 
 from .input import Buttons, Keys, MouseInputEvent, KeyboardInputEvent, DefocusInputEvent
 from .context import Color, RenderContext, BoundingRectangle
@@ -16,6 +16,7 @@ class ComponentException(Exception):
 
 
 DeferredInput = Callable[[], bool]
+SettingT = TypeVar("SettingT")
 
 
 class Component:
@@ -123,6 +124,32 @@ class Component:
         handle the input as long as no other control handles the input first.
         """
         return False
+
+    def put_setting(self, name: str, setting: "SettingT") -> "SettingT":
+        self.settings[name] = setting
+        return setting
+
+    def get_setting(self, name: str, expected_type: Type["SettingT"], default: Optional["SettingT"] = None) -> "SettingT":
+        if name not in self.settings:
+            if default is not None:
+                return default
+            raise Exception("Invalid setting {}".format(name))
+        setting = self.settings[name]
+        if not isinstance(setting, expected_type):
+            raise Exception("Invalid setting {}".format(name))
+        return setting
+
+    def get_optional_setting(self, name: str, expected_type: Type["SettingT"]) -> Optional["SettingT"]:
+        if name not in self.settings:
+            return None
+        setting = self.settings[name]
+        if not isinstance(setting, expected_type):
+            raise Exception("Invalid setting {}".format(name))
+        return setting
+
+    def del_setting(self, name: str) -> None:
+        if name in self.settings:
+            del self.settings[name]
 
     def __repr__(self) -> str:
         return "{}()".format(self.__class__.__name__)

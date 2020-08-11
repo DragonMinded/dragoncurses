@@ -7,6 +7,7 @@ if TYPE_CHECKING:
     from .context import BoundingRectangle
 
 ComponentT = TypeVar("ComponentT", bound="Component")
+SettingT = TypeVar("SettingT")
 
 
 class Scene:
@@ -41,6 +42,32 @@ class Scene:
         if not isinstance(component, expected_type):
             raise Exception("Invalid component reference {}".format(name))
         return component
+
+    def put_setting(self, name: str, setting: "SettingT") -> "SettingT":
+        self.settings[name] = setting
+        return setting
+
+    def get_setting(self, name: str, expected_type: Type["SettingT"], default: Optional["SettingT"] = None) -> "SettingT":
+        if name not in self.settings:
+            if default is not None:
+                return default
+            raise Exception("Invalid setting {}".format(name))
+        setting = self.settings[name]
+        if not isinstance(setting, expected_type):
+            raise Exception("Invalid setting {}".format(name))
+        return setting
+
+    def get_optional_setting(self, name: str, expected_type: Type["SettingT"]) -> Optional["SettingT"]:
+        if name not in self.settings:
+            return None
+        setting = self.settings[name]
+        if not isinstance(setting, expected_type):
+            raise Exception("Invalid setting {}".format(name))
+        return setting
+
+    def del_setting(self, name: str) -> None:
+        if name in self.settings:
+            del self.settings[name]
 
     def tick(self) -> None:
         pass
