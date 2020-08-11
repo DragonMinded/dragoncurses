@@ -296,7 +296,7 @@ class RenderContext:
     @staticmethod
     def __sanitize(string: str) -> str:
         string = string.replace("&lt;", "<")
-        string = string.replace("&lg;", ">")
+        string = string.replace("&gt;", ">")
         string = string.replace("&amp;", "&")
         return string
 
@@ -428,6 +428,18 @@ class RenderContext:
             else:
                 length += len(RenderContext.__sanitize(part))
         return length
+
+    def formatted_string_height(
+        self,
+        string: str,
+    ) -> int:
+        # TODO: This also isn't a very good place for this, but its close to the draw function as well.
+        parts = RenderContext.__split_formatted_string(string)
+        rawtext = "".join(RenderContext.__sanitize(part) for part in parts if not (part[:1] == "<" and part[-1:] == ">"))
+        if len(rawtext) == 0:
+            return 0
+        wrap_points = RenderContext.__get_wrap_points(rawtext, 0, 0, self.bounds)
+        return len(wrap_points) + 1
 
     def clear(self) -> None:
         self.__curses_context.clear()

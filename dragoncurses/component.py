@@ -944,8 +944,9 @@ class DialogBoxComponent(Component):
     def handle_input(self, event: "InputEvent") -> Union[bool, DeferredInput]:
         if isinstance(event, KeyboardInputEvent):
             if event.character == Keys.ESCAPE:
-                if self.__escape_callback is not None:
-                    self.__escape_callback()
+                cb = self.__escape_callback
+                if cb is not None:
+                    cb()
                     return True
         handled = self.__component._handle_input(event)
         if isinstance(handled, bool):
