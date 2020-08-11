@@ -2,6 +2,7 @@ class Keys:
     ENTER = chr(10)
     ESCAPE = chr(27)
     SPACE = " "
+    TAB = "\t"
     DELETE = "KEY_DC"
     BACKSPACE = "KEY_BACKSPACE"
     UP = "KEY_UP"
