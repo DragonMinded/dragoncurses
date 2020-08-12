@@ -1544,10 +1544,10 @@ class PictureComponent(Component):
 
 class TextInputComponent(Component):
 
-    def __init__(self, text: str, *, allowed_characters: str, focused: bool = False, max_length: int = -1) -> None:
+    def __init__(self, text: str, *, allowed_characters: str, focused: bool = False, max_length: int = -1, cursor_pos: int = -1) -> None:
         super().__init__()
         self.__focused = focused
-        self.__cursor = len(text)
+        self.__cursor = min(max(0, len(text) if cursor_pos == -1 else cursor_pos), len(text))
         self.__text = text
         self.__max_length = max_length
         self.__characters = allowed_characters
@@ -1593,6 +1593,16 @@ class TextInputComponent(Component):
             self.__focused = focus
 
     focus = property(__get_focus, __set_focus)
+
+    def __get_cursor(self) -> int:
+        return self.__cursor
+
+    def __set_cursor(self, cursor: int) -> None:
+        with self.lock:
+            self.__changed = True if self.__changed else (self.__cursor != cursor)
+            self.__cursor = min(max(0, cursor), len(self.__text))
+
+    cursor = property(__get_cursor, __set_cursor)
 
     def handle_input(self, event: "InputEvent") -> Union[bool, DeferredInput]:
         def add(char: str) -> None:
