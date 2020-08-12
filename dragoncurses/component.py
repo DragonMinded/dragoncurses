@@ -1580,6 +1580,7 @@ class TextInputComponent(Component):
         with self.lock:
             self.__changed = True if self.__changed else (self.__text != text)
             self.__text = text
+            self.__cursor = len(text)
 
     text = property(__get_text, __set_text)
 
