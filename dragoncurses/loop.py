@@ -1,4 +1,5 @@
 import curses
+import os
 import time
 
 from contextlib import contextmanager
@@ -13,12 +14,10 @@ from .scene import Scene
 
 @contextmanager
 def loop_config(context) -> Generator[None, None, None]:
+    curses.noecho()
     curses.curs_set(0)
     curses.mouseinterval(0)
-    _, oldmask = curses.mousemask(
-        curses.BUTTON1_PRESSED | curses.BUTTON2_PRESSED | curses.BUTTON3_PRESSED | curses.BUTTON4_PRESSED |
-        curses.BUTTON1_RELEASED | curses.BUTTON2_RELEASED | curses.BUTTON3_RELEASED | curses.REPORT_MOUSE_POSITION
-    )
+    _, oldmask = curses.mousemask(-1)
     curses.use_default_colors()
 
     yield
@@ -26,11 +25,15 @@ def loop_config(context) -> Generator[None, None, None]:
     context.clear()
     context.refresh()
 
-    curses.mousemask(oldmask)
+    #curses.mousemask(oldmask)
     curses.curs_set(1)
+    curses.echo()
 
 
 def execute(start_scene: Type[Scene], settings: Optional[Dict[str, Any]] = None, idle_callback: Optional[Callable[["MainLoop"], None]] = None, realtime: bool = False) -> None:
+    os.environ.setdefault('ESCDELAY', '25')
+    os.environ['ESCDELAY'] = '25'
+
     def wrapped(context) -> None:
         # Run the main program loop
         with loop_config(context):
@@ -212,7 +215,7 @@ class MainLoop:
                                 (time.time() - self.__mousestate[Buttons.RIGHT][1]) < 1.0
                             ):
                                 event = MouseInputEvent(x, y, Buttons.RIGHT)
-                        elif mask == curses.REPORT_MOUSE_POSITION:
+                        elif mask == curses.REPORT_MOUSE_POSITION or mask == 0x200000:
                             event = ScrollInputEvent(x, y, Directions.DOWN)
                     except CursesError:
                         pass

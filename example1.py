@@ -437,8 +437,6 @@ def main() -> int:
     t = Thread(target=thread, args=(exitthread,))
     t.start()
 
-    os.environ.setdefault('ESCDELAY', '0')
-
     # Run the main program loop, starting with the welcome scene
     execute(WelcomeScene, idle_callback=idle, realtime=True)
 
