@@ -133,8 +133,9 @@ class MainLoop:
                     self.components = [component] if component else []
 
                 # Actualize each component
-                for component in self.components:
-                    component._attach(self.scene, self.settings)
+                if self.scene:
+                    for component in self.components:
+                        component._attach(self.scene, self.settings)
 
                 # Always paint the first scene
                 self.__dirty = True
@@ -177,8 +178,11 @@ class MainLoop:
             self.__dirty = False
 
             # Finally, handle input to the scene, then to the components
-            key = self.context.getkey()
             event = None
+            if self.scene:
+                key = self.context.getkey()
+            else:
+                key = None
 
             if key is not None:
                 if key == "KEY_RESIZE":
@@ -273,7 +277,7 @@ class MainLoop:
                     if not handled and self.scene is not None:
                         handled = self.scene.handle_input(event)
 
-            if event is None and not self.__dirty:
+            if self.scene and event is None and not self.__dirty:
                 # Call the idle timeout function so main application can do work
                 if self.__idle is not None:
                     self.__idle(self)
