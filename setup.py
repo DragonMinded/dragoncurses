@@ -6,6 +6,7 @@ setup(
     description='Console-based UI toolkit building on top of curses.',
     author='DragonMinded',
     license='Public Domain',
+    package_data={"dragoncurses": ["py.typed"]},
     packages=[
         # Core packages
         'dragoncurses',
