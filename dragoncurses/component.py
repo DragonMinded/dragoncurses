@@ -209,8 +209,13 @@ class LabelComponent(Component):
         self.__rendered = False
         self.__formatted = formatted
         self.__centered = centered
+        self.__visible = True
 
     def render(self, context: RenderContext) -> None:
+        if not self.__visible:
+            self.__rendered = True
+            return
+
         if self.__invert or (self.__backcolor != Color.NONE):
             # Fill the entire label so that it is fully inverted
             for line in range(context.bounds.height):
@@ -279,6 +284,16 @@ class LabelComponent(Component):
             self.__invert = invert
 
     invert = property(__get_invert, __set_invert)
+
+    def __get_visible(self) -> bool:
+        return self.__visible
+
+    def __set_visible(self, visible: bool) -> None:
+        with self.lock:
+            self.__rendered = False if not self.__rendered else (self.__visible == visible)
+            self.__visible = visible
+
+    visible = property(__get_visible, __set_visible)
 
     def __repr__(self) -> str:
         return "LabelComponent(text={})".format(self.__text)
@@ -407,6 +422,15 @@ class ButtonComponent(HotkeyableComponent, ClickableComponent, Component):
 
     invert = property(__get_invert, __set_invert)
 
+    def __get_visible(self) -> bool:
+        return self.__border.visible
+
+    def __set_visible(self, visible: bool) -> None:
+        with self.lock:
+            self.__border.visible = visible
+
+    visible = property(__get_visible, __set_visible)
+
     def __repr__(self) -> str:
         return "ButtonComponent(text={})".format(self.__label.text)
 
@@ -424,6 +448,7 @@ class BorderComponent(Component):
         self.__style = style or BorderComponent.SOLID
         self.__color = bordercolor or Color.NONE
         self.__drawn = False
+        self.__visible = True
 
         if self.__style in [self.SINGLE, self.DOUBLE] and not Settings.enable_unicode:
             raise ComponentException("Unicode is not enabled, cannot use {} border style!".format(self.__style))
@@ -455,6 +480,8 @@ class BorderComponent(Component):
 
     def render(self, context: RenderContext) -> None:
         self.__drawn = True
+        if not self.__visible:
+            return
 
         context.clear()
 
@@ -527,6 +554,16 @@ class BorderComponent(Component):
 
     bordercolor = property(__get_color, __set_color)
 
+    def __get_visible(self) -> bool:
+        return self.__visible
+
+    def __set_visible(self, visible: bool) -> None:
+        with self.lock:
+            self.__drawn = False if not self.__drawn else (self.__visible == visible)
+            self.__visible = visible
+
+    visible = property(__get_visible, __set_visible)
+
     def handle_input(self, event: "InputEvent") -> Union[bool, DeferredInput]:
         return self.__component._handle_input(event)
 
@@ -544,6 +581,7 @@ class ListComponent(Component):
         self.__components = components
         self.__size = size
         self.__direction = direction
+        self.__visible = True
 
     @property
     def dirty(self) -> bool:
@@ -616,7 +654,7 @@ class ListComponent(Component):
         return size
 
     def render(self, context: RenderContext) -> None:
-        if not self.__components:
+        if not self.__components or not self.__visible:
             return
 
         size = self.__get_size(context)
@@ -687,6 +725,15 @@ class ListComponent(Component):
             return False
         return _defer
 
+    def __get_visible(self) -> bool:
+        return self.__visible
+
+    def __set_visible(self, visible: bool) -> None:
+        with self.lock:
+            self.__visible = visible
+
+    visible = property(__get_visible, __set_visible)
+
     def __repr__(self) -> str:
         return "ListComponent({}, direction={})".format(",".join(repr(c) for c in self.__components), self.__direction)
 
@@ -703,6 +750,7 @@ class StickyComponent(Component):
         self.__components = [stickycomponent, othercomponent]
         self.__size = size
         self.__location = location
+        self.__visible = True
 
     @property
     def dirty(self) -> bool:
@@ -750,6 +798,9 @@ class StickyComponent(Component):
         return size
 
     def render(self, context: RenderContext) -> None:
+        if not self.__visible:
+            return
+
         size = self.__get_size()
 
         # Set up the bounds for the sticky component then the other component.
@@ -848,6 +899,15 @@ class StickyComponent(Component):
                     return True
             return False
         return _defer
+
+    def __get_visible(self) -> bool:
+        return self.__visible
+
+    def __set_visible(self, visible: bool) -> None:
+        with self.lock:
+            self.__visible = visible
+
+    visible = property(__get_visible, __set_visible)
 
     def __repr__(self) -> str:
         return "StickyComponent({}, location={})".format(",".join(repr(c) for c in self.__components), self.__location)
@@ -1669,10 +1729,15 @@ class SelectInputComponent(Component):
         self.__options = options
         self.__focused = focused
         self.__changed = False
+        self.__visible = True
         if selected not in options:
             raise Exception("Selected value must be in options!")
 
     def render(self, context: RenderContext) -> None:
+        if not self.__visible:
+            self.__changed = False
+            return
+
         # No artifacts, please!
         context.clear()
 
@@ -1729,6 +1794,16 @@ class SelectInputComponent(Component):
             self.__selected = selected
 
     selected = property(__get_selected, __set_selected)
+
+    def __get_visible(self) -> bool:
+        return self.__visible
+
+    def __set_visible(self, visible: bool) -> None:
+        with self.lock:
+            self.__changed = True if self.__changed else (self.__visible != visible)
+            self.__visible = visible
+
+    visible = property(__get_visible, __set_visible)
 
     def handle_input(self, event: "InputEvent") -> Union[bool, DeferredInput]:
         options = self.__options
