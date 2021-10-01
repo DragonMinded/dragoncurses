@@ -343,10 +343,10 @@ class HotkeyableComponent(Component):
 
 class ButtonComponent(HotkeyableComponent, ClickableComponent, Component):
 
-    def __init__(self, text: str = "", *, textcolor: Optional[str] = None, bordercolor: Optional[str] = None, formatted: bool = False, centered: bool = False) -> None:
+    def __init__(self, text: str = "", *, textcolor: Optional[str] = None, bordercolor: Optional[str] = None, invert: bool = False, formatted: bool = False, centered: bool = False) -> None:
         super().__init__()
         text, hotkey = _text_to_hotkeys(text)
-        self.__label = LabelComponent(text, textcolor=textcolor, formatted=formatted, centered=centered)
+        self.__label = LabelComponent(text, textcolor=textcolor, formatted=formatted, centered=centered, invert=invert)
         self.__border = BorderComponent(
             PaddingComponent(self.__label, horizontalpadding=1),
             style=BorderComponent.DOUBLE if Settings.enable_unicode else BorderComponent.ASCII,
@@ -397,6 +397,16 @@ class ButtonComponent(HotkeyableComponent, ClickableComponent, Component):
             self.__border.bordercolor = color
 
     bordercolor = property(__get_bordercolor, __set_bordercolor)
+
+    def __get_invert(self) -> bool:
+        return self.__label.invert
+
+    def __set_invert(self, invert: bool) -> None:
+        with self.lock:
+            self.__label.invert = invert
+
+    invert = property(__get_invert, __set_invert)
+
 
     def __repr__(self) -> str:
         return "ButtonComponent(text={})".format(self.__label.text)
