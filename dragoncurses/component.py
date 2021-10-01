@@ -345,12 +345,15 @@ class ButtonComponent(HotkeyableComponent, ClickableComponent, Component):
 
     def __init__(self, text: str = "", *, textcolor: Optional[str] = None, bordercolor: Optional[str] = None, formatted: bool = False, centered: bool = False) -> None:
         super().__init__()
+        text, hotkey = _text_to_hotkeys(text)
         self.__label = LabelComponent(text, textcolor=textcolor, formatted=formatted, centered=centered)
         self.__border = BorderComponent(
             PaddingComponent(self.__label, horizontalpadding=1),
             style=BorderComponent.DOUBLE if Settings.enable_unicode else BorderComponent.ASCII,
             bordercolor=bordercolor,
         )
+        if hotkey:
+            self.set_hotkey(hotkey)
 
     def render(self, context: RenderContext) -> None:
         self.__border._render(context, context.bounds)
