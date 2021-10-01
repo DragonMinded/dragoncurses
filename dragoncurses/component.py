@@ -407,7 +407,6 @@ class ButtonComponent(HotkeyableComponent, ClickableComponent, Component):
 
     invert = property(__get_invert, __set_invert)
 
-
     def __repr__(self) -> str:
         return "ButtonComponent(text={})".format(self.__label.text)
 
