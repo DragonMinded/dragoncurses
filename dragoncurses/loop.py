@@ -1,5 +1,6 @@
 import curses
 import os
+import platform
 import time
 
 from contextlib import contextmanager
@@ -103,6 +104,9 @@ class MainLoop:
             self.__dirty = True
 
     def run(self) -> None:
+        # Some redraw optimizations don't seem to work on Windows.
+        on_windows: bool = platform.system() == "Windows"
+
         while self.scene is not None or self.__next_scene is not None:
             # First, see if we should change the scene
             if self.__next_scene is not None:
@@ -159,7 +163,7 @@ class MainLoop:
                 any(component.dirty for component in self.components) or
                 any(component.dirty for (component, _, _) in self.registered_components)
             ):
-                if self.__dirty:
+                if on_windows or self.__dirty:
                     # Only clear when we resize or paint a new scene. Otherwise just refresh.
                     self.context.clear()
                 for component in self.components:
