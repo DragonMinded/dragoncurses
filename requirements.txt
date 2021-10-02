@@ -1,0 +1,1 @@
+windows-curses; sys.platform == 'win32'
