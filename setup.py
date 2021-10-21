@@ -1,39 +1,28 @@
+import os
 from setuptools import setup  # pyre-ignore
 
 
-def format_req(req: str) -> str:
-    if ";" not in req:
-        return req
-
-    req, extra = req.split(";", 1)
-    req = req.strip()
-    extra = extra.strip()
-
-    if "sys.platform" in extra and "==" in extra:
-        platform = None
-        if "win32" in extra:
-            platform = "Windows"
-
-        if platform is not None:
-            return f"{req}; platform_system=='{platform}'"
-
-    raise Exception(f"Don't know how to format {req}!")
+with open(os.path.join("dragoncurses", "README.md"), "r", encoding="utf-8") as fh:
+    long_description = fh.read()
 
 
 setup(
     name='dragoncurses',
-    version='0.1',
+    version='0.1.1',
     description='Console-based UI toolkit building on top of curses.',
+    long_description=long_description,
+    long_description_content_type="text/markdown",
     author='DragonMinded',
+    author_email='dragonminded@dragonminded.com',
     license='Public Domain',
-    package_data={"dragoncurses": ["py.typed"]},
+    url='https://github.com/DragonMinded/dragoncurses',
+    package_data={"dragoncurses": ["py.typed", "README.md"]},
     packages=[
         # Core packages
         'dragoncurses',
     ],
     install_requires=[
-        format_req(req) for req in open('requirements.txt').read().split('\n') if len(req) > 0
+        "windows-curses; platform_system=='Windows'",
     ],
-    include_package_data=True,
-    zip_safe=False,
+    python_requires=">=3.6",
 )
