@@ -218,8 +218,8 @@ class LabelComponent(Component):
         self,
         text: str = "",
         *,
-        textcolor: Optional[str] = None,
-        backcolor: Optional[str] = None,
+        textcolor: Optional[Color] = None,
+        backcolor: Optional[Color] = None,
         invert: bool = False,
         formatted: bool = False,
         centered: bool = False
@@ -264,11 +264,11 @@ class LabelComponent(Component):
                 post = ""
             if self.__forecolor != Color.NONE or self.__backcolor != Color.NONE:
                 pre = pre + "<{},{}>".format(
-                    self.__forecolor.lower(), self.__backcolor.lower()
+                    self.__forecolor.name.lower(), self.__backcolor.name.lower()
                 )
                 post = (
                     "</{},{}>".format(
-                        self.__forecolor.lower(), self.__backcolor.lower()
+                        self.__forecolor.name.lower(), self.__backcolor.name.lower()
                     )
                     + post
                 )
@@ -304,11 +304,11 @@ class LabelComponent(Component):
             self.__text = text
 
     @property
-    def textcolor(self) -> str:
+    def textcolor(self) -> Color:
         return self.__forecolor
 
     @textcolor.setter
-    def textcolor(self, textcolor: str) -> None:
+    def textcolor(self, textcolor: Color) -> None:
         with self.lock:
             self.__rendered = (
                 False if not self.__rendered else (self.__forecolor == textcolor)
@@ -316,11 +316,11 @@ class LabelComponent(Component):
             self.__forecolor = textcolor
 
     @property
-    def backcolor(self) -> str:
+    def backcolor(self) -> Color:
         return self.__backcolor
 
     @backcolor.setter
-    def backcolor(self, backcolor: str) -> None:
+    def backcolor(self, backcolor: Color) -> None:
         with self.lock:
             self.__rendered = (
                 False if not self.__rendered else (self.__backcolor == backcolor)
@@ -419,8 +419,8 @@ class ButtonComponent(HotkeyableComponent, ClickableComponent, Component):
         self,
         text: str = "",
         *,
-        textcolor: Optional[str] = None,
-        bordercolor: Optional[str] = None,
+        textcolor: Optional[Color] = None,
+        bordercolor: Optional[Color] = None,
         invert: bool = False,
         formatted: bool = False,
         centered: bool = False
@@ -470,20 +470,20 @@ class ButtonComponent(HotkeyableComponent, ClickableComponent, Component):
             self.__label.text = text
 
     @property
-    def textcolor(self) -> str:
+    def textcolor(self) -> Color:
         return self.__label.textcolor
 
     @textcolor.setter
-    def textcolor(self, color: str) -> None:
+    def textcolor(self, color: Color) -> None:
         with self.lock:
             self.__label.textcolor = color
 
     @property
-    def bordercolor(self) -> str:
+    def bordercolor(self) -> Color:
         return self.__border.bordercolor
 
     @bordercolor.setter
-    def bordercolor(self, color: str) -> None:
+    def bordercolor(self, color: Color) -> None:
         with self.lock:
             self.__border.bordercolor = color
 
@@ -521,7 +521,7 @@ class BorderComponent(Component):
         component: Component,
         *,
         style: Optional[str] = None,
-        bordercolor: Optional[str] = None
+        bordercolor: Optional[Color] = None
     ) -> None:
         super().__init__()
         self.__component = component
@@ -680,11 +680,11 @@ class BorderComponent(Component):
             )
 
     @property
-    def bordercolor(self) -> str:
+    def bordercolor(self) -> Color:
         return self.__color
 
     @bordercolor.setter
-    def bordercolor(self, color: str) -> None:
+    def bordercolor(self, color: Color) -> None:
         with self.lock:
             self.__drawn = False if not self.__drawn else (self.__color == color)
             self.__color = color
@@ -1155,7 +1155,7 @@ class DialogBoxComponent(Component):
     def __init__(
         self,
         text: str,
-        options: Sequence[Tuple[str, Callable[..., Any]]],
+        options: Sequence[Tuple[str, Callable[[Component, str], Any]]],
         *,
         padding: int = 5,
         formatted: bool = False,
@@ -1165,11 +1165,13 @@ class DialogBoxComponent(Component):
         super().__init__()
         self.__text = text
         self.__padding = padding
-        self.__escape_callback: Optional[Callable[..., Any]] = None
+        self.__escape_callback: Optional[Callable[[], bool]] = None
 
         buttons: List[Component] = []
 
-        def __cb(button: Buttons, option, callback) -> bool:
+        def __cb(
+            button: Buttons, option: str, callback: Callable[[Component, str], Any]
+        ) -> bool:
             if button == Buttons.LEFT or button == Buttons.KEY:
                 callback(self, option)
             return True
@@ -1364,7 +1366,7 @@ class PopoverMenuComponent(Component):
 
         entries: List[MenuComponent] = []
 
-        def __cb(component, button, option, callback) -> bool:
+        def __cb(component, button: Buttons, option, callback) -> bool:
             if self.__is_closing():  # pyre-ignore Pyre can't see that this exists.
                 return True
             if button == Buttons.LEFT or button == Buttons.KEY:
@@ -1383,7 +1385,7 @@ class PopoverMenuComponent(Component):
                     self.__close()  # pyre-ignore Pyre can't see that this exists.
             return True
 
-        def __new_menu(button, position, entries) -> bool:
+        def __new_menu(button: Buttons, position, entries) -> bool:
             if button == Buttons.LEFT or button == Buttons.KEY:
                 menu = PopoverMenuComponent(
                     entries, animated=self.__animated
@@ -1526,8 +1528,8 @@ class MonochromePictureComponent(Component):
         data: Sequence[Sequence[bool]],
         *,
         size: Optional[str] = None,
-        forecolor: Optional[str] = None,
-        backcolor: Optional[str] = None
+        forecolor: Optional[Color] = None,
+        backcolor: Optional[Color] = None
     ) -> None:
         super().__init__()
         self.__forecolor = forecolor or Color.NONE
@@ -1585,47 +1587,49 @@ class MonochromePictureComponent(Component):
             for row in range(int((self.__height + 1) / 2)):
                 for column in range(int((self.__width + 1) / 2)):
                     # Grab a quad that represents what graphic to draw
-                    quad = (
+                    quad: List[bool] = (
                         self.__data[row * 2][(column * 2) : ((column * 2) + 2)]
                         + self.__data[(row * 2) + 1][(column * 2) : ((column * 2) + 2)]
                     )
-                    quad = "".join("1" if v else "0" for v in quad)
+                    quadstr: str = "".join("1" if v else "0" for v in quad)
 
                     # Look it up
-                    if quad == "0000":
+                    if quadstr == "0000":
                         char = " "
-                    elif quad == "0001":
+                    elif quadstr == "0001":
                         char = "\u2597"
-                    elif quad == "0010":
+                    elif quadstr == "0010":
                         char = "\u2596"
-                    elif quad == "0011":
+                    elif quadstr == "0011":
                         char = "\u2584"
-                    elif quad == "0100":
+                    elif quadstr == "0100":
                         char = "\u259D"
-                    elif quad == "0101":
+                    elif quadstr == "0101":
                         char = "\u2590"
-                    elif quad == "0110":
+                    elif quadstr == "0110":
                         char = "\u259E"
-                    elif quad == "0111":
+                    elif quadstr == "0111":
                         char = "\u259F"
-                    elif quad == "1000":
+                    elif quadstr == "1000":
                         char = "\u2598"
-                    elif quad == "1001":
+                    elif quadstr == "1001":
                         char = "\u259A"
-                    elif quad == "1010":
+                    elif quadstr == "1010":
                         char = "\u258C"
-                    elif quad == "1011":
+                    elif quadstr == "1011":
                         char = "\u2599"
-                    elif quad == "1100":
+                    elif quadstr == "1100":
                         char = "\u2580"
-                    elif quad == "1101":
+                    elif quadstr == "1101":
                         char = "\u259C"
-                    elif quad == "1110":
+                    elif quadstr == "1110":
                         char = "\u259B"
-                    elif quad == "1111":
+                    elif quadstr == "1111":
                         char = "\u2588"
                     else:
-                        raise Exception("Logic error, invalid quad '{}'!".format(quad))
+                        raise Exception(
+                            "Logic error, invalid quad '{}'!".format(quadstr)
+                        )
 
                     # Render it
                     context.draw_string(
@@ -1646,12 +1650,17 @@ class MonochromePictureComponent(Component):
     def data(self) -> Sequence[Sequence[bool]]:
         return self.__data
 
+    @data.setter
+    def data(self, data: Sequence[Sequence[bool]]) -> None:
+        with self.lock:
+            self.__set_data_impl(data)
+
     def __set_data_impl(self, data: Sequence[Sequence[bool]]) -> None:
         self.__height = len(data)
         self.__width = max(len(p) for p in data)
 
         # Chunk our graphics data into groups of 2
-        self.__data = data
+        self.__data = [[x for x in row] for row in data]
 
         if self.__size == self.SIZE_HALF:
             # First, do the easy part of making sure the height is divisible by 2
@@ -1673,17 +1682,12 @@ class MonochromePictureComponent(Component):
                     *([False] * (desired_width - len(self.__data[i]))),
                 ]
 
-    @data.setter
-    def data(self, data: Sequence[Sequence[bool]]) -> None:
-        with self.lock:
-            self.__set_data_impl(data)
-
     @property
-    def forecolor(self) -> str:
+    def forecolor(self) -> Color:
         return self.__forecolor
 
     @forecolor.setter
-    def forecolor(self, forecolor: str) -> None:
+    def forecolor(self, forecolor: Color) -> None:
         with self.lock:
             self.__rendered = (
                 False if not self.__rendered else (self.__forecolor == forecolor)
@@ -1691,11 +1695,11 @@ class MonochromePictureComponent(Component):
             self.__forecolor = forecolor
 
     @property
-    def backcolor(self) -> str:
+    def backcolor(self) -> Color:
         return self.__backcolor
 
     @backcolor.setter
-    def backcolor(self, backcolor: str) -> None:
+    def backcolor(self, backcolor: Color) -> None:
         with self.lock:
             self.__rendered = (
                 False if not self.__rendered else (self.__backcolor == backcolor)
@@ -1769,45 +1773,47 @@ class PictureComponent(Component):
                             backcolor = color
                             break
 
-                    quad = "".join("1" if v == forecolor else "0" for v in quad)
-                    if quad == "1111" and forecolor == backcolor:
-                        quad = "0000"
+                    quadstr = "".join("1" if v == forecolor else "0" for v in quad)
+                    if quadstr == "1111" and forecolor == backcolor:
+                        quadstr = "0000"
 
                     # Look it up
-                    if quad == "0000":
+                    if quadstr == "0000":
                         char = " "
-                    elif quad == "0001":
+                    elif quadstr == "0001":
                         char = "\u2597"
-                    elif quad == "0010":
+                    elif quadstr == "0010":
                         char = "\u2596"
-                    elif quad == "0011":
+                    elif quadstr == "0011":
                         char = "\u2584"
-                    elif quad == "0100":
+                    elif quadstr == "0100":
                         char = "\u259D"
-                    elif quad == "0101":
+                    elif quadstr == "0101":
                         char = "\u2590"
-                    elif quad == "0110":
+                    elif quadstr == "0110":
                         char = "\u259E"
-                    elif quad == "0111":
+                    elif quadstr == "0111":
                         char = "\u259F"
-                    elif quad == "1000":
+                    elif quadstr == "1000":
                         char = "\u2598"
-                    elif quad == "1001":
+                    elif quadstr == "1001":
                         char = "\u259A"
-                    elif quad == "1010":
+                    elif quadstr == "1010":
                         char = "\u258C"
-                    elif quad == "1011":
+                    elif quadstr == "1011":
                         char = "\u2599"
-                    elif quad == "1100":
+                    elif quadstr == "1100":
                         char = "\u2580"
-                    elif quad == "1101":
+                    elif quadstr == "1101":
                         char = "\u259C"
-                    elif quad == "1110":
+                    elif quadstr == "1110":
                         char = "\u259B"
-                    elif quad == "1111":
+                    elif quadstr == "1111":
                         char = "\u2588"
                     else:
-                        raise Exception("Logic error, invalid quad '{}'!".format(quad))
+                        raise Exception(
+                            "Logic error, invalid quad '{}'!".format(quadstr)
+                        )
 
                     # Render it
                     context.draw_string(
@@ -1824,12 +1830,17 @@ class PictureComponent(Component):
     def data(self) -> Sequence[Sequence[Color]]:
         return self.__data
 
+    @data.setter
+    def data(self, data: Sequence[Sequence[Color]]) -> None:
+        with self.lock:
+            self.__set_data_impl(data)
+
     def __set_data_impl(self, data: Sequence[Sequence[Color]]) -> None:
         self.__height = len(data)
         self.__width = max(len(p) for p in data)
 
         # Chunk our graphics data into groups of 2
-        self.__data = data
+        self.__data = [[x for x in row] for row in data]
 
         if self.__size == self.SIZE_HALF:
             # First, do the easy part of making sure the height is divisible by 2
@@ -1850,11 +1861,6 @@ class PictureComponent(Component):
                     *self.__data[i],
                     *([Color.NONE] * (desired_width - len(self.__data[i]))),
                 ]
-
-    @data.setter
-    def data(self, data: Sequence[Sequence[Color]]) -> None:
-        with self.lock:
-            self.__set_data_impl(data)
 
 
 class TextInputComponent(Component):

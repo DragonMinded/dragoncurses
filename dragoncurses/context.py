@@ -1,8 +1,9 @@
 import curses
+from enum import Enum, auto
 
 from contextlib import contextmanager
 from _curses import error as CursesError
-from typing import Any, Generator, Optional, List
+from typing import Any, Dict, Generator, Optional, List
 
 
 CursesContext = Any
@@ -48,22 +49,22 @@ class BoundingRectangle:
         )
 
 
-class Color:
-    NONE = "none"
-    RED = "red"
-    YELLOW = "yellow"
-    GREEN = "green"
-    CYAN = "cyan"
-    BLUE = "blue"
-    MAGENTA = "magenta"
-    WHITE = "white"
-    BLACK = "black"
+class Color(Enum):
+    NONE = auto()
+    RED = auto()
+    YELLOW = auto()
+    GREEN = auto()
+    CYAN = auto()
+    BLUE = auto()
+    MAGENTA = auto()
+    WHITE = auto()
+    BLACK = auto()
 
 
 class RenderContext:
 
-    __color_table = {
-        Color.NONE: 0,
+    __color_table: Dict[str, int] = {
+        Color.NONE.name: 0,
     }
 
     def __init__(self, curses_context: CursesContext, off_y: int = 0, off_x: int = 0):
@@ -71,8 +72,8 @@ class RenderContext:
         self.__off_y = off_y
         self.__off_x = off_x
 
-    def __get_color(self, forecolor: str, backcolor: str) -> int:
-        colorkey = forecolor + ":" + backcolor
+    def __get_color(self, forecolor: Color, backcolor: Color) -> int:
+        colorkey = forecolor.name + ":" + backcolor.name
         if colorkey in self.__color_table:
             return self.__color_table[colorkey]
 
@@ -227,8 +228,8 @@ class RenderContext:
         x: int,
         string: str,
         *,
-        forecolor: str = Color.NONE,
-        backcolor: str = Color.NONE,
+        forecolor: Color = Color.NONE,
+        backcolor: Color = Color.NONE,
         invert: bool = False,
         underline: bool = False,
         wrap: bool = False,
@@ -370,9 +371,11 @@ class RenderContext:
                 else:
                     splitcolors = tag.split(",")
                     while len(splitcolors) < 2:
-                        splitcolors.append(Color.NONE)
+                        splitcolors.append(Color.NONE.name)
 
-                    color = self.__get_color(splitcolors[0], splitcolors[1])
+                    color = self.__get_color(
+                        Color[splitcolors[0].upper()], Color[splitcolors[1].upper()]
+                    )
                     if color == colors[-1] and len(colors) > 1:
                         colors = colors[:-1]
             elif part[:1] == "<" and part[-1:] == ">":
@@ -385,9 +388,13 @@ class RenderContext:
                 else:
                     splitcolors = tag.split(",")
                     while len(splitcolors) < 2:
-                        splitcolors.append(Color.NONE)
+                        splitcolors.append(Color.NONE.name)
 
-                    colors.append(self.__get_color(splitcolors[0], splitcolors[1]))
+                    colors.append(
+                        self.__get_color(
+                            Color[splitcolors[0].upper()], Color[splitcolors[1].upper()]
+                        )
+                    )
             else:
                 # The rest of the text displays should trail, for wrapping
                 text = RenderContext.__sanitize(part)

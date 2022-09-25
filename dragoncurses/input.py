@@ -67,7 +67,7 @@ class ScrollInputEvent(InputEvent):
 
 
 class DefocusInputEvent(InputEvent):
-    def __init__(self, button: str) -> None:
+    def __init__(self, button: Buttons) -> None:
         self.button = button
 
     def __repr__(self) -> str:

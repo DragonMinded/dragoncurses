@@ -476,13 +476,13 @@ class WelcomeScene(Scene):
 
 class TestScene(Scene):
     def pop_menu(self, component: Component, button: Buttons) -> bool:
-        def text(text):
+        def text(text: str) -> None:
             component.text = text
 
-        def color(color):
+        def color(color: Color) -> None:
             component.textcolor = color
 
-        def border(color):
+        def border(color: Color) -> None:
             component.bordercolor = color
 
         menu = PopoverMenuComponent(
@@ -672,7 +672,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="A simple curses UI library.")
     parser.parse_args()
 
-    exitthread = []
+    exitthread: List[str] = []
     t = Thread(target=thread, args=(exitthread,))
     t.start()
 
