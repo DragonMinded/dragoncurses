@@ -2,15 +2,18 @@ import curses
 
 from contextlib import contextmanager
 from _curses import error as CursesError
-from typing import Generator, Optional, List
+from typing import Any, Generator, Optional, List
+
+
+CursesContext = Any
 
 
 class BoundingRectangle:
-    def __init__(self, *, top, bottom, left, right) -> None:
-        self.top = top
-        self.bottom = bottom
-        self.left = left
-        self.right = right
+    def __init__(self, *, top: int, bottom: int, left: int, right: int) -> None:
+        self.top: int = top
+        self.bottom: int = bottom
+        self.left: int = left
+        self.right: int = right
 
     @property
     def width(self) -> int:
@@ -31,7 +34,7 @@ class BoundingRectangle:
             right=self.right + x,
         )
 
-    def clip(self, bounds: "BoundingRectangle"):
+    def clip(self, bounds: "BoundingRectangle") -> "BoundingRectangle":
         return BoundingRectangle(
             top=min(max(self.top, bounds.top), bounds.bottom),
             bottom=max(min(self.bottom, bounds.bottom), bounds.top),
@@ -63,7 +66,7 @@ class RenderContext:
         Color.NONE: 0,
     }
 
-    def __init__(self, curses_context, off_y: int = 0, off_x: int = 0):
+    def __init__(self, curses_context: CursesContext, off_y: int = 0, off_x: int = 0):
         self.__curses_context = curses_context
         self.__off_y = off_y
         self.__off_x = off_x
@@ -149,8 +152,8 @@ class RenderContext:
     def __get_wrap_points(
         string: str, starty: int, startx: int, bounds: BoundingRectangle
     ) -> List[int]:
-        locations = []
-        processed = 0
+        locations: List[int] = []
+        processed: int = 0
 
         while string:
             # If we've wrapped once we start at the beginning of the line. Otherwise, we
@@ -277,8 +280,8 @@ class RenderContext:
 
     @staticmethod
     def __split_formatted_string(string: str) -> List[str]:
-        accumulator = []
-        parts = []
+        accumulator: List[str] = []
+        parts: List[str] = []
 
         for ch in string:
             if ch == "<":
@@ -482,6 +485,6 @@ class RenderContext:
 
     def getkey(self) -> Optional[str]:
         try:
-            return self.__curses_context.getkey()
+            return str(self.__curses_context.getkey())
         except CursesError:
             return None

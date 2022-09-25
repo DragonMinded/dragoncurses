@@ -11,3 +11,7 @@ This library, while operational, is far from complete. It has a partial layout c
 ## Installing
 
 This package is available on PyPI under the "dragoncurses" package and can be installed with pip or placed in a requirements.txt or setup.py file. Alternatively, you can check out this repository and then type "python3 -m pip install ." at the root to install the current development version. Please note that it requires a modern version of Python3 to run (Python 3.6 or greater).
+
+## Developing
+
+There are settings files for both mypy and flake8. Black is used to format the entire repository, with no settings tweaks. To check for type issuse, run "mypy ." at the root of the project. Similarly, to check for lint issues, run "flake8 ." at the root of the project. To autoformat code, run "black ." at the root of the project.
