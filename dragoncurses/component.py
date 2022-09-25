@@ -1183,10 +1183,17 @@ class DialogBoxComponent(Component):
 
         for option, callback in options:
             text, hotkey = _text_to_hotkeys(option)
+
+            def __create_cb(
+                option: str, callback: Callable[[Component, str], Any]
+            ) -> Callable[[Component, Buttons], bool]:
+                def __closure_cb(component: Component, button: Buttons) -> bool:
+                    return __cb(button, option, callback)
+
+                return __closure_cb
+
             entry = ButtonComponent(text, formatted=True).on_click(
-                lambda component, button, option=option, callback=callback: __cb(
-                    button, option, callback
-                ),
+                __create_cb(option, callback)
             )
             if hotkey is not None:
                 entry = entry.set_hotkey(hotkey)
@@ -1375,11 +1382,14 @@ class PopoverMenuComponent(Component):
         entries: List[MenuComponent] = []
 
         def __cb(
-            component: "MenuEntryComponent",
+            component: Component,
             button: Buttons,
             option: str,
             callback: Callable[[Component, str], None],
         ) -> bool:
+            if not isinstance(component, MenuEntryComponent):
+                raise Exception("Logic error, called from wrong component!")
+
             if self.__is_closing():  # pyre-ignore Pyre can't see that this exists.
                 return True
             if button == Buttons.LEFT or button == Buttons.KEY:
@@ -1399,11 +1409,11 @@ class PopoverMenuComponent(Component):
             return True
 
         def __new_menu(
-            button: Buttons, position: int, entries: Sequence[Tuple[str, Any]]
+            button: Buttons, position: int, menuentries: Sequence[Tuple[str, Any]]
         ) -> bool:
             if button == Buttons.LEFT or button == Buttons.KEY:
                 menu = PopoverMenuComponent(
-                    entries, animated=self.__animated
+                    menuentries, animated=self.__animated
                 )  # pyre-ignore Pyre can't see that this exists.
                 menu.__parent = self
                 self.register(menu, menu.bounds.offset(position, self.bounds.width))
@@ -1421,10 +1431,17 @@ class PopoverMenuComponent(Component):
             elif isinstance(callback, list):
                 # Submenu
                 text, hotkey = _text_to_hotkeys(option)
+
+                def __create_submenu_cb(
+                    position: int, menuentries: Sequence[Tuple[str, Any]]
+                ) -> Callable[[Component, Buttons], bool]:
+                    def __closure_cb(component: Component, button: Buttons) -> bool:
+                        return __new_menu(button, position - 1, menuentries)
+
+                    return __closure_cb
+
                 entry = MenuEntryComponent(text, expandable=True).on_click(
-                    lambda component, button, position=position, entries=callback: __new_menu(
-                        button, position - 1, entries
-                    )
+                    __create_submenu_cb(position, callback)
                 )
                 if hotkey is not None:
                     entry = entry.set_hotkey(hotkey)
@@ -1432,10 +1449,22 @@ class PopoverMenuComponent(Component):
             else:
                 # Menu Entry
                 text, hotkey = _text_to_hotkeys(option)
+
+                def __create_menuentry_cb(
+                    option: str, callback: Callable[[Component, str], None]
+                ) -> Callable[[Component, Buttons], bool]:
+                    def __closure_cb(component: Component, button: Buttons) -> bool:
+                        # The typing here is a bit weird, what's really going on is that this closure callback
+                        # will get passed into the menu entry component's on_click(), meaning that technically
+                        # component is a "MenuEntryComponent" since callbacks always get the self type. However,
+                        # that doesn't work with our mixin strategy. So, for better or worse, we will need to
+                        # change the signature of __cb and assert on the type dynamically.
+                        return __cb(component, button, option, callback)
+
+                    return __closure_cb
+
                 entry = MenuEntryComponent(text).on_click(
-                    lambda component, button, option=option, callback=callback: __cb(
-                        component, button, option, callback
-                    )
+                    __create_menuentry_cb(option, callback)
                 )
                 if hotkey is not None:
                     entry = entry.set_hotkey(hotkey)
