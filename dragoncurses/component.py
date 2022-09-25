@@ -11,6 +11,7 @@ from typing import (
     TypeVar,
     Union,
     TYPE_CHECKING,
+    cast,
 )
 
 from .input import Buttons, Keys, MouseInputEvent, KeyboardInputEvent, DefocusInputEvent
@@ -31,19 +32,14 @@ SettingT = TypeVar("SettingT")
 
 
 class Component:
-
-    location = None
-    settings = None
-    scene = None
-    __children = None
-
     def __init__(self) -> None:
         self.lock = Lock()
 
     def _attach(self, scene: "Scene", settings: Dict[str, Any]) -> None:
         self.settings = settings
         self.scene = scene
-        self.__children = []
+        self.location: Optional[BoundingRectangle] = None
+        self.__children: List["Component"] = []
         self.attach(scene, settings)
 
     def attach(self, scene: "Scene", settings: Dict[str, Any]) -> None:
@@ -63,7 +59,7 @@ class Component:
         """
         pass
 
-    def register(self, component: "Component", location: "BoundingRectangle") -> None:
+    def register(self, component: "Component", location: BoundingRectangle) -> None:
         self.scene.register_component(component, location, parent=self)
         self.__children.append(component)
 
@@ -355,13 +351,16 @@ class LabelComponent(Component):
         return "LabelComponent(text={})".format(self.__text)
 
 
+ClickableComponentT = TypeVar("ClickableComponentT", bound="ClickableComponent")
+
+
 class ClickableComponent(Component):
 
-    callback = None
+    callback: Optional[Callable[[Component, Buttons], bool]] = None
 
     def on_click(
-        self: ComponentT, callback: Callable[[Component, Buttons], bool]
-    ) -> ComponentT:
+        self: ClickableComponentT, callback: Callable[[Component, Buttons], bool]
+    ) -> ClickableComponentT:
         self.callback = callback
         return self
 
@@ -382,11 +381,14 @@ class ClickableComponent(Component):
         return super().handle_input(event)
 
 
+HotkeyableComponentT = TypeVar("HotkeyableComponentT", bound="HotkeyableComponent")
+
+
 class HotkeyableComponent(Component):
 
-    hotkey = None
+    hotkey: Optional[str] = None
 
-    def set_hotkey(self: ComponentT, key: str) -> ComponentT:
+    def set_hotkey(self: HotkeyableComponentT, key: str) -> HotkeyableComponentT:
         if key.isalnum():
             self.hotkey = key.lower()
         return self
@@ -401,7 +403,10 @@ class HotkeyableComponent(Component):
                     # Wrong input, defer to other mixins
                     return super().handle_input(event)
 
-                callback = getattr(self, "callback", None)
+                callback = cast(
+                    Optional[Callable[[Component, Buttons], bool]],
+                    getattr(self, "callback", None),
+                )
                 if callback is not None:
                     handled = callback(self, Buttons.KEY)
                     # Fall through to default if the callback didn't handle
@@ -1236,14 +1241,17 @@ class DialogBoxComponent(Component):
             # Swallow events, since we don't want this to be closeable or to allow clicks
             # behind it.
             return True
-        else:
-            # Return the deferred input callback to be processed. Swallow inputs on this
-            # as well.
-            def _defer() -> bool:
-                handled()
-                return True
 
-            return _defer
+        # Return the deferred input callback to be processed. Swallow inputs on this
+        # as well. Create a local because mypy seems to lose the type information when
+        # creating a closure over handled.
+        deferredcallback: DeferredInput = handled
+
+        def _defer() -> bool:
+            deferredcallback()
+            return True
+
+        return _defer
 
     def __repr__(self) -> str:
         return "DialogBoxComponent(text={})".format(self.__text)
@@ -1358,15 +1366,20 @@ class PopoverMenuComponent(Component):
         self, options: Sequence[Tuple[str, Any]], *, animated: bool = False
     ) -> None:
         super().__init__()
-        self.__parent = None
-        self.__children = []
-        self.__animated = animated
-        self.__closecb = None
-        self.__closedelay = 0
+        self.__parent: Optional["PopoverMenuComponent"] = None
+        self.__children: List["PopoverMenuComponent"] = []
+        self.__animated: bool = animated
+        self.__closecb: Optional[Callable[[], None]] = None
+        self.__closedelay: int = 0
 
         entries: List[MenuComponent] = []
 
-        def __cb(component, button: Buttons, option, callback) -> bool:
+        def __cb(
+            component: "MenuEntryComponent",
+            button: Buttons,
+            option: str,
+            callback: Callable[[Component, str], None],
+        ) -> bool:
             if self.__is_closing():  # pyre-ignore Pyre can't see that this exists.
                 return True
             if button == Buttons.LEFT or button == Buttons.KEY:
@@ -1385,7 +1398,9 @@ class PopoverMenuComponent(Component):
                     self.__close()  # pyre-ignore Pyre can't see that this exists.
             return True
 
-        def __new_menu(button: Buttons, position, entries) -> bool:
+        def __new_menu(
+            button: Buttons, position: int, entries: Sequence[Tuple[str, Any]]
+        ) -> bool:
             if button == Buttons.LEFT or button == Buttons.KEY:
                 menu = PopoverMenuComponent(
                     entries, animated=self.__animated
@@ -1433,7 +1448,7 @@ class PopoverMenuComponent(Component):
                 size=1,
             ),
         )
-        self.__entries = entries
+        self.__entries: List[MenuComponent] = entries
 
     def __close(self, *, close_parent: bool = True) -> None:
         self.unregister(self)
@@ -1454,7 +1469,8 @@ class PopoverMenuComponent(Component):
             top=0,
             bottom=len(self.__entries) + 2,
             left=0,
-            right=max(e.bounds.width for e in self.__entries) + 2,
+            right=max(e.bounds.width for e in self.__entries if e.bounds is not None)
+            + 2,
         )
 
     def attach(self, scene: "Scene", settings: Dict[str, Any]) -> None:
@@ -1515,7 +1531,9 @@ class PopoverMenuComponent(Component):
         return True
 
     def __repr__(self) -> str:
-        return "PopoverMenuComponent({})".format(",".join(self.__entries))
+        return "PopoverMenuComponent({})".format(
+            ",".join(str(e) for e in self.__entries)
+        )
 
 
 class MonochromePictureComponent(Component):
@@ -2118,7 +2136,7 @@ class SelectInputComponent(Component):
                     select_next()
                     return True
         if isinstance(event, MouseInputEvent):
-            if event.button == Buttons.LEFT:
+            if event.button == Buttons.LEFT and self.location is not None:
                 relx = event.x - self.location.left
                 rely = event.y - self.location.top
                 if rely == 0 and relx == 0:
