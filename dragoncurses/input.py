@@ -1,3 +1,6 @@
+from enum import Enum, auto
+
+
 class Keys:
     ENTER = chr(10)
     ESCAPE = chr(27)
@@ -15,16 +18,16 @@ class Keys:
     END = "KEY_END"
 
 
-class Buttons:
-    LEFT = "LEFT"
-    MIDDLE = "MIDDLE"
-    RIGHT = "RIGHT"
-    KEY = "KEY"
+class Buttons(Enum):
+    LEFT = auto()
+    MIDDLE = auto()
+    RIGHT = auto()
+    KEY = auto()
 
 
-class Directions:
-    UP = "UP"
-    DOWN = "DOWN"
+class Directions(Enum):
+    UP = auto()
+    DOWN = auto()
 
 
 class InputEvent:
@@ -40,26 +43,26 @@ class KeyboardInputEvent(InputEvent):
 
 
 class MouseInputEvent(InputEvent):
-    def __init__(self, x: int, y: int, button: str) -> None:
+    def __init__(self, x: int, y: int, button: Buttons) -> None:
         self.x = x
         self.y = y
         self.button = button
 
     def __repr__(self) -> str:
         return "MouseInputEvent(x={}, y={}, button={})".format(
-            self.x, self.y, self.button
+            self.x, self.y, self.button.name
         )
 
 
 class ScrollInputEvent(InputEvent):
-    def __init__(self, x: int, y: int, direction: str) -> None:
+    def __init__(self, x: int, y: int, direction: Directions) -> None:
         self.x = x
         self.y = y
         self.direction = direction
 
     def __repr__(self) -> str:
         return "ScrollInputEvent(x={}, y={}, direction={})".format(
-            self.x, self.y, self.direction
+            self.x, self.y, self.direction.name
         )
 
 

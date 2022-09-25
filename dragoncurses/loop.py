@@ -96,7 +96,7 @@ class MainLoop:
         self.__dirty: bool = False
         self.__idle = idle_callback
         self.__last_tick: float = 0.0
-        self.__mousestate: Dict[str, Tuple[Tuple[int, int], float]] = {
+        self.__mousestate: Dict[Buttons, Tuple[Tuple[int, int], float]] = {
             Buttons.LEFT: ((-1, -1), -1),
             Buttons.MIDDLE: ((-1, -1), -1),
             Buttons.RIGHT: ((-1, -1), -1),

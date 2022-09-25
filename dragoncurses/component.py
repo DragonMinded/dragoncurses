@@ -360,7 +360,7 @@ class ClickableComponent(Component):
     callback = None
 
     def on_click(
-        self: ComponentT, callback: Callable[[Component, str], bool]
+        self: ComponentT, callback: Callable[[Component, Buttons], bool]
     ) -> ComponentT:
         self.callback = callback
         return self
@@ -1169,7 +1169,7 @@ class DialogBoxComponent(Component):
 
         buttons: List[Component] = []
 
-        def __cb(button, option, callback) -> bool:
+        def __cb(button: Buttons, option, callback) -> bool:
             if button == Buttons.LEFT or button == Buttons.KEY:
                 callback(self, option)
             return True

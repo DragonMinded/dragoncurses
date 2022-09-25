@@ -29,6 +29,7 @@ from dragoncurses.input import (
     ScrollInputEvent,
     Keys,
     Directions,
+    Buttons,
 )
 from dragoncurses.settings import Settings
 
@@ -151,16 +152,16 @@ class RenderCounterComponent(Component):
 
 
 class WelcomeScene(Scene):
-    def update_button(self, component: Component, button: str) -> bool:
+    def update_button(self, component: Component, button: Buttons) -> bool:
         if isinstance(component, ButtonComponent):
             component.text = "A <underline>b</underline>utton (pressed {}!)".format(
-                button
+                button.name
             )
             component.textcolor = (
                 Color.RED
-                if button == "LEFT"
+                if button == Buttons.LEFT
                 else Color.CYAN
-                if button == "RIGHT"
+                if button == Buttons.RIGHT
                 else Color.YELLOW
             )
         return True
@@ -474,7 +475,7 @@ class WelcomeScene(Scene):
 
 
 class TestScene(Scene):
-    def pop_menu(self, component: Component, button: str) -> bool:
+    def pop_menu(self, component: Component, button: Buttons) -> bool:
         def text(text):
             component.text = text
 
