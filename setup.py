@@ -8,7 +8,7 @@ with open(os.path.join("dragoncurses", "README.md"), "r", encoding="utf-8") as f
 
 setup(
     name="dragoncurses",
-    version="0.1.1",
+    version="0.2.0",
     description="Console-based UI toolkit building on top of curses.",
     long_description=long_description,
     long_description_content_type="text/markdown",
