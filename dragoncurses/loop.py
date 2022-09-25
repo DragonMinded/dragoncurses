@@ -5,11 +5,12 @@ import time
 
 from contextlib import contextmanager
 from _curses import error as CursesError
-from typing import Any, Callable, Dict, Generator, List, Optional, Type
+from typing import Any, Callable, Dict, Generator, List, Optional, Tuple, Type
 
 from .context import BoundingRectangle, RenderContext
 from .component import Component, DeferredInput
 from .input import (
+    InputEvent,
     KeyboardInputEvent,
     MouseInputEvent,
     ScrollInputEvent,
@@ -19,8 +20,11 @@ from .input import (
 from .scene import Scene
 
 
+CursesContext = Any
+
+
 @contextmanager
-def loop_config(context) -> Generator[None, None, None]:
+def loop_config(context: CursesContext) -> Generator[None, None, None]:
     curses.noecho()
     curses.curs_set(0)
     curses.mouseinterval(0)
@@ -46,7 +50,7 @@ def execute(
     os.environ.setdefault("ESCDELAY", "25")
     os.environ["ESCDELAY"] = "25"
 
-    def wrapped(context) -> None:
+    def wrapped(context: CursesContext) -> None:
         # Run the main program loop
         with loop_config(context):
             loop = MainLoop(
@@ -70,7 +74,7 @@ class MainLoop:
 
     def __init__(
         self,
-        context,
+        context: CursesContext,
         settings: Dict[str, Any],
         idle_callback: Optional[Callable[["MainLoop"], None]] = None,
         realtime: bool = False,
@@ -83,14 +87,16 @@ class MainLoop:
             context.nodelay(0)
         self.context = RenderContext(context)
         self.settings = settings
-        self.scene = None
-        self.components = []
-        self.registered_components = []
-        self.__next_scene = None
-        self.__dirty = False
+        self.scene: Optional[Scene] = None
+        self.components: List[Component] = []
+        self.registered_components: List[
+            Tuple[Component, Optional[BoundingRectangle], Optional[Component]]
+        ] = []
+        self.__next_scene: Optional[Scene] = None
+        self.__dirty: bool = False
         self.__idle = idle_callback
-        self.__last_tick = 0.0
-        self.__mousestate = {
+        self.__last_tick: float = 0.0
+        self.__mousestate: Dict[str, Tuple[Tuple[int, int], float]] = {
             Buttons.LEFT: ((-1, -1), -1),
             Buttons.MIDDLE: ((-1, -1), -1),
             Buttons.RIGHT: ((-1, -1), -1),
@@ -105,9 +111,9 @@ class MainLoop:
 
     def register_component(
         self,
-        component: "Component",
-        location: Optional["BoundingRectangle"],
-        parent: Optional["Component"],
+        component: Component,
+        location: Optional[BoundingRectangle],
+        parent: Optional[Component],
     ) -> None:
         if parent is not None and location is None:
             raise Exception("Must provide a location when providing a parent!")
@@ -117,7 +123,7 @@ class MainLoop:
             self.registered_components.append((component, location, parent))
             self.__dirty = True
 
-    def unregister_component(self, component: "Component") -> None:
+    def unregister_component(self, component: Component) -> None:
         found_components = [
             c for c in self.registered_components if id(c[0]) == id(component)
         ]
@@ -158,8 +164,8 @@ class MainLoop:
                     self.scene = None
                     self.components = []
                 else:
-                    component = self.scene.create()
-                    self.components = [component] if component else []
+                    newcomponent = self.scene.create()
+                    self.components = [newcomponent] if newcomponent else []
 
                 # Actualize each component
                 if self.scene:
@@ -201,7 +207,11 @@ class MainLoop:
                     if parent is None:
                         parentlocation = self.context.bounds
                     else:
-                        parentlocation = parent.location
+                        parentlocation = (
+                            parent.location
+                            if parent.location is not None
+                            else self.context.bounds
+                        )
                     if location is None:
                         location = self.context.bounds
                     component._render(
@@ -214,7 +224,7 @@ class MainLoop:
             self.__dirty = False
 
             # Finally, handle input to the scene, then to the components
-            event = None
+            event: Optional[InputEvent] = None
             if self.scene:
                 key = self.context.getkey()
             else:

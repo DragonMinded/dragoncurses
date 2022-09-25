@@ -1370,7 +1370,7 @@ class PopoverMenuComponent(Component):
             if button == Buttons.LEFT or button == Buttons.KEY:
                 if self.__animated:  # pyre-ignore Pyre can't see that this exists.
 
-                    def __closeaction():
+                    def __closeaction() -> None:
                         callback(self, option)
                         self.__close()
 
