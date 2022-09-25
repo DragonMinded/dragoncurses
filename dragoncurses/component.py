@@ -293,63 +293,63 @@ class LabelComponent(Component):
     def dirty(self) -> bool:
         return not self.__rendered
 
-    def __get_text(self) -> str:
+    @property
+    def text(self) -> str:
         return self.__text
 
-    def __set_text(self, text: str) -> None:
+    @text.setter
+    def text(self, text: str) -> None:
         with self.lock:
             self.__rendered = False if not self.__rendered else (self.__text == text)
             self.__text = text
 
-    text = property(__get_text, __set_text)
-
-    def __get_textcolor(self) -> str:
+    @property
+    def textcolor(self) -> str:
         return self.__forecolor
 
-    def __set_textcolor(self, textcolor: str) -> None:
+    @textcolor.setter
+    def textcolor(self, textcolor: str) -> None:
         with self.lock:
             self.__rendered = (
                 False if not self.__rendered else (self.__forecolor == textcolor)
             )
             self.__forecolor = textcolor
 
-    textcolor = property(__get_textcolor, __set_textcolor)
-
-    def __get_backcolor(self) -> str:
+    @property
+    def backcolor(self) -> str:
         return self.__backcolor
 
-    def __set_backcolor(self, backcolor: str) -> None:
+    @backcolor.setter
+    def backcolor(self, backcolor: str) -> None:
         with self.lock:
             self.__rendered = (
                 False if not self.__rendered else (self.__backcolor == backcolor)
             )
             self.__backcolor = backcolor
 
-    backcolor = property(__get_backcolor, __set_backcolor)
-
-    def __get_invert(self) -> bool:
+    @property
+    def invert(self) -> bool:
         return self.__invert
 
-    def __set_invert(self, invert: bool) -> None:
+    @invert.setter
+    def invert(self, invert: bool) -> None:
         with self.lock:
             self.__rendered = (
                 False if not self.__rendered else (self.__invert == invert)
             )
             self.__invert = invert
 
-    invert = property(__get_invert, __set_invert)
-
-    def __get_visible(self) -> bool:
+    @property
+    def visible(self) -> bool:
         return self.__visible
 
-    def __set_visible(self, visible: bool) -> None:
+    @visible.setter
+    def visible(self, visible: bool) -> None:
         with self.lock:
             self.__rendered = (
                 False if not self.__rendered else (self.__visible == visible)
             )
             self.__visible = visible
-
-    visible = property(__get_visible, __set_visible)
 
     def __repr__(self) -> str:
         return "LabelComponent(text={})".format(self.__text)
@@ -460,50 +460,50 @@ class ButtonComponent(HotkeyableComponent, ClickableComponent, Component):
     def tick(self) -> None:
         self.__border.tick()
 
-    def __get_text(self) -> str:
+    @property
+    def text(self) -> str:
         return self.__label.text
 
-    def __set_text(self, text: str) -> None:
+    @text.setter
+    def text(self, text: str) -> None:
         with self.lock:
             self.__label.text = text
 
-    text = property(__get_text, __set_text)
-
-    def __get_textcolor(self) -> str:
+    @property
+    def textcolor(self) -> str:
         return self.__label.textcolor
 
-    def __set_textcolor(self, color: str) -> None:
+    @textcolor.setter
+    def textcolor(self, color: str) -> None:
         with self.lock:
             self.__label.textcolor = color
 
-    textcolor = property(__get_textcolor, __set_textcolor)
-
-    def __get_bordercolor(self) -> str:
+    @property
+    def bordercolor(self) -> str:
         return self.__border.bordercolor
 
-    def __set_bordercolor(self, color: str) -> None:
+    @bordercolor.setter
+    def bordercolor(self, color: str) -> None:
         with self.lock:
             self.__border.bordercolor = color
 
-    bordercolor = property(__get_bordercolor, __set_bordercolor)
-
-    def __get_invert(self) -> bool:
+    @property
+    def invert(self) -> bool:
         return self.__label.invert
 
-    def __set_invert(self, invert: bool) -> None:
+    @invert.setter
+    def invert(self, invert: bool) -> None:
         with self.lock:
             self.__label.invert = invert
 
-    invert = property(__get_invert, __set_invert)
-
-    def __get_visible(self) -> bool:
+    @property
+    def visible(self) -> bool:
         return self.__border.visible
 
-    def __set_visible(self, visible: bool) -> None:
+    @visible.setter
+    def visible(self, visible: bool) -> None:
         with self.lock:
             self.__border.visible = visible
-
-    visible = property(__get_visible, __set_visible)
 
     def __repr__(self) -> str:
         return "ButtonComponent(text={})".format(self.__label.text)
@@ -679,25 +679,25 @@ class BorderComponent(Component):
                 ),
             )
 
-    def __get_color(self) -> str:
+    @property
+    def bordercolor(self) -> str:
         return self.__color
 
-    def __set_color(self, color: str) -> None:
+    @bordercolor.setter
+    def bordercolor(self, color: str) -> None:
         with self.lock:
             self.__drawn = False if not self.__drawn else (self.__color == color)
             self.__color = color
 
-    bordercolor = property(__get_color, __set_color)
-
-    def __get_visible(self) -> bool:
+    @property
+    def visible(self) -> bool:
         return self.__visible
 
-    def __set_visible(self, visible: bool) -> None:
+    @visible.setter
+    def visible(self, visible: bool) -> None:
         with self.lock:
             self.__drawn = False if not self.__drawn else (self.__visible == visible)
             self.__visible = visible
-
-    visible = property(__get_visible, __set_visible)
 
     def handle_input(self, event: "InputEvent") -> Union[bool, DeferredInput]:
         return self.__component._handle_input(event)
@@ -873,14 +873,14 @@ class ListComponent(Component):
 
         return _defer
 
-    def __get_visible(self) -> bool:
+    @property
+    def visible(self) -> bool:
         return self.__visible
 
-    def __set_visible(self, visible: bool) -> None:
+    @visible.setter
+    def visible(self, visible: bool) -> None:
         with self.lock:
             self.__visible = visible
-
-    visible = property(__get_visible, __set_visible)
 
     def __repr__(self) -> str:
         return "ListComponent({}, direction={})".format(
@@ -1061,14 +1061,14 @@ class StickyComponent(Component):
 
         return _defer
 
-    def __get_visible(self) -> bool:
+    @property
+    def visible(self) -> bool:
         return self.__visible
 
-    def __set_visible(self, visible: bool) -> None:
+    @visible.setter
+    def visible(self, visible: bool) -> None:
         with self.lock:
             self.__visible = visible
-
-    visible = property(__get_visible, __set_visible)
 
     def __repr__(self) -> str:
         return "StickyComponent({}, location={})".format(
@@ -1077,13 +1077,13 @@ class StickyComponent(Component):
 
 
 class PaddingComponent(Component):
-    def __init__(self, component: Component, **kwargs) -> None:
+    def __init__(self, component: Component, **kwargs: int) -> None:
         super().__init__()
-        self.__component = component
-        self.__leftpad = 0
-        self.__rightpad = 0
-        self.__toppad = 0
-        self.__bottompad = 0
+        self.__component: Component = component
+        self.__leftpad: int = 0
+        self.__rightpad: int = 0
+        self.__toppad: int = 0
+        self.__bottompad: int = 0
 
         if "padding" in kwargs:
             self.__leftpad = (
@@ -1301,18 +1301,18 @@ class MenuEntryComponent(HotkeyableComponent, ClickableComponent, MenuComponent)
         if self.__animating:
             self.__rendered = False
 
-    def __get_animating(self) -> bool:
+    @property
+    def animating(self) -> bool:
         return self.__animating
 
-    def __set_animating(self, animating: bool) -> None:
+    @animating.setter
+    def animating(self, animating: bool) -> None:
         with self.lock:
             self.__rendered = (
                 False if not self.__rendered else (self.__animating == animating)
             )
             self.__animating = animating
             self.__animation_spot = 1
-
-    animating = property(__get_animating, __set_animating)
 
     @property
     def text(self) -> str:
@@ -1642,7 +1642,8 @@ class MonochromePictureComponent(Component):
     def dirty(self) -> bool:
         return not self.__rendered
 
-    def __get_data(self) -> Sequence[Sequence[bool]]:
+    @property
+    def data(self) -> Sequence[Sequence[bool]]:
         return self.__data
 
     def __set_data_impl(self, data: Sequence[Sequence[bool]]) -> None:
@@ -1672,35 +1673,34 @@ class MonochromePictureComponent(Component):
                     *([False] * (desired_width - len(self.__data[i]))),
                 ]
 
-    def __set_data(self, data: Sequence[Sequence[bool]]) -> None:
+    @data.setter
+    def data(self, data: Sequence[Sequence[bool]]) -> None:
         with self.lock:
             self.__set_data_impl(data)
 
-    data = property(__get_data, __set_data)
-
-    def __get_forecolor(self) -> str:
+    @property
+    def forecolor(self) -> str:
         return self.__forecolor
 
-    def __set_forecolor(self, forecolor: str) -> None:
+    @forecolor.setter
+    def forecolor(self, forecolor: str) -> None:
         with self.lock:
             self.__rendered = (
                 False if not self.__rendered else (self.__forecolor == forecolor)
             )
             self.__forecolor = forecolor
 
-    forecolor = property(__get_forecolor, __set_forecolor)
-
-    def __get_backcolor(self) -> str:
+    @property
+    def backcolor(self) -> str:
         return self.__backcolor
 
-    def __set_backcolor(self, backcolor: str) -> None:
+    @backcolor.setter
+    def backcolor(self, backcolor: str) -> None:
         with self.lock:
             self.__rendered = (
                 False if not self.__rendered else (self.__backcolor == backcolor)
             )
             self.__backcolor = backcolor
-
-    backcolor = property(__get_backcolor, __set_backcolor)
 
 
 class PictureComponent(Component):
@@ -1820,7 +1820,8 @@ class PictureComponent(Component):
     def dirty(self) -> bool:
         return not self.__rendered
 
-    def __get_data(self) -> Sequence[Sequence[Color]]:
+    @property
+    def data(self) -> Sequence[Sequence[Color]]:
         return self.__data
 
     def __set_data_impl(self, data: Sequence[Sequence[Color]]) -> None:
@@ -1850,11 +1851,10 @@ class PictureComponent(Component):
                     *([Color.NONE] * (desired_width - len(self.__data[i]))),
                 ]
 
-    def __set_data(self, data: Sequence[Sequence[Color]]) -> None:
+    @data.setter
+    def data(self, data: Sequence[Sequence[Color]]) -> None:
         with self.lock:
             self.__set_data_impl(data)
-
-    data = property(__get_data, __set_data)
 
 
 class TextInputComponent(Component):
@@ -1907,36 +1907,36 @@ class TextInputComponent(Component):
 
         self.__changed = False
 
-    def __get_text(self) -> str:
+    @property
+    def text(self) -> str:
         return self.__text
 
-    def __set_text(self, text: str) -> None:
+    @text.setter
+    def text(self, text: str) -> None:
         with self.lock:
             self.__changed = True if self.__changed else (self.__text != text)
             self.__text = text
             self.__cursor = len(text)
 
-    text = property(__get_text, __set_text)
-
-    def __get_focus(self) -> bool:
+    @property
+    def focus(self) -> bool:
         return self.__focused
 
-    def __set_focus(self, focus: bool) -> None:
+    @focus.setter
+    def focus(self, focus: bool) -> None:
         with self.lock:
             self.__changed = True if self.__changed else (self.__focused != focus)
             self.__focused = focus
 
-    focus = property(__get_focus, __set_focus)
-
-    def __get_cursor(self) -> int:
+    @property
+    def cursor(self) -> int:
         return self.__cursor
 
-    def __set_cursor(self, cursor: int) -> None:
+    @cursor.setter
+    def cursor(self, cursor: int) -> None:
         with self.lock:
             self.__changed = True if self.__changed else (self.__cursor != cursor)
             self.__cursor = min(max(0, cursor), len(self.__text))
-
-    cursor = property(__get_cursor, __set_cursor)
 
     def handle_input(self, event: "InputEvent") -> Union[bool, DeferredInput]:
         def add(char: str) -> None:
@@ -2048,37 +2048,37 @@ class SelectInputComponent(Component):
     def options(self) -> Sequence[str]:
         return self.__options
 
-    def __get_focus(self) -> bool:
+    @property
+    def focus(self) -> bool:
         return self.__focused
 
-    def __set_focus(self, focus: bool) -> None:
+    @focus.setter
+    def focus(self, focus: bool) -> None:
         with self.lock:
             self.__changed = True if self.__changed else (self.__focused != focus)
             self.__focused = focus
 
-    focus = property(__get_focus, __set_focus)
-
-    def __get_selected(self) -> str:
+    @property
+    def selected(self) -> str:
         return self.__selected
 
-    def __set_selected(self, selected: str) -> None:
+    @selected.setter
+    def selected(self, selected: str) -> None:
         if selected not in self.__options:
             raise Exception("Selected value must be in options!")
         with self.lock:
             self.__changed = True if self.__changed else (self.__selected != selected)
             self.__selected = selected
 
-    selected = property(__get_selected, __set_selected)
-
-    def __get_visible(self) -> bool:
+    @property
+    def visible(self) -> bool:
         return self.__visible
 
-    def __set_visible(self, visible: bool) -> None:
+    @visible.setter
+    def visible(self, visible: bool) -> None:
         with self.lock:
             self.__changed = True if self.__changed else (self.__visible != visible)
             self.__visible = visible
-
-    visible = property(__get_visible, __set_visible)
 
     def handle_input(self, event: "InputEvent") -> Union[bool, DeferredInput]:
         options = self.__options
