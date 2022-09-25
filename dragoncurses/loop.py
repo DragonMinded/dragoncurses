@@ -9,7 +9,13 @@ from typing import Any, Callable, Dict, Generator, List, Optional, Type
 
 from .context import BoundingRectangle, RenderContext
 from .component import Component, DeferredInput
-from .input import KeyboardInputEvent, MouseInputEvent, ScrollInputEvent, Buttons, Directions
+from .input import (
+    KeyboardInputEvent,
+    MouseInputEvent,
+    ScrollInputEvent,
+    Buttons,
+    Directions,
+)
 from .scene import Scene
 
 
@@ -26,19 +32,29 @@ def loop_config(context) -> Generator[None, None, None]:
     context.clear()
     context.refresh()
 
-    #curses.mousemask(oldmask)
+    # curses.mousemask(oldmask)
     curses.curs_set(1)
     curses.echo()
 
 
-def execute(start_scene: Type[Scene], settings: Optional[Dict[str, Any]] = None, idle_callback: Optional[Callable[["MainLoop"], None]] = None, realtime: bool = False) -> None:
-    os.environ.setdefault('ESCDELAY', '25')
-    os.environ['ESCDELAY'] = '25'
+def execute(
+    start_scene: Type[Scene],
+    settings: Optional[Dict[str, Any]] = None,
+    idle_callback: Optional[Callable[["MainLoop"], None]] = None,
+    realtime: bool = False,
+) -> None:
+    os.environ.setdefault("ESCDELAY", "25")
+    os.environ["ESCDELAY"] = "25"
 
     def wrapped(context) -> None:
         # Run the main program loop
         with loop_config(context):
-            loop = MainLoop(context, settings if settings is not None else {}, idle_callback, realtime=realtime)
+            loop = MainLoop(
+                context,
+                settings if settings is not None else {},
+                idle_callback,
+                realtime=realtime,
+            )
             loop.change_scene(start_scene)
             loop.run()
 
@@ -52,7 +68,13 @@ class MainLoop:
     class _ExitScene(Scene):
         pass
 
-    def __init__(self, context, settings: Dict[str, Any], idle_callback: Optional[Callable[["MainLoop"], None]] = None, realtime: bool = False) -> None:
+    def __init__(
+        self,
+        context,
+        settings: Dict[str, Any],
+        idle_callback: Optional[Callable[["MainLoop"], None]] = None,
+        realtime: bool = False,
+    ) -> None:
         if not realtime and idle_callback:
             raise Exception("Cannot have idle callback without realtime mode!")
         if realtime:
@@ -81,9 +103,14 @@ class MainLoop:
     def exit(self) -> None:
         self.__next_scene = MainLoop._ExitScene(self, self.settings)
 
-    def register_component(self, component: "Component", location: Optional["BoundingRectangle"], parent: Optional["Component"]) -> None:
+    def register_component(
+        self,
+        component: "Component",
+        location: Optional["BoundingRectangle"],
+        parent: Optional["Component"],
+    ) -> None:
         if parent is not None and location is None:
-            raise Exception('Must provide a location when providing a parent!')
+            raise Exception("Must provide a location when providing a parent!")
 
         if self.scene is not None:
             component._attach(self.scene, self.settings)
@@ -92,12 +119,10 @@ class MainLoop:
 
     def unregister_component(self, component: "Component") -> None:
         found_components = [
-            c for c in self.registered_components
-            if id(c[0]) == id(component)
+            c for c in self.registered_components if id(c[0]) == id(component)
         ]
         self.registered_components = [
-            c for c in self.registered_components
-            if id(c[0]) != id(component)
+            c for c in self.registered_components if id(c[0]) != id(component)
         ]
         for (component, _, _) in found_components:
             component._detach()
@@ -159,9 +184,11 @@ class MainLoop:
 
             # Now, see about drawing the scene
             if (
-                self.__dirty or
-                any(component.dirty for component in self.components) or
-                any(component.dirty for (component, _, _) in self.registered_components)
+                self.__dirty
+                or any(component.dirty for component in self.components)
+                or any(
+                    component.dirty for (component, _, _) in self.registered_components
+                )
             ):
                 if on_windows or self.__dirty:
                     # Only clear when we resize or paint a new scene. Otherwise just refresh.
@@ -177,7 +204,12 @@ class MainLoop:
                         parentlocation = parent.location
                     if location is None:
                         location = self.context.bounds
-                    component._render(self.context, location.offset(parentlocation.top, parentlocation.left).clip(self.context.bounds))
+                    component._render(
+                        self.context,
+                        location.offset(parentlocation.top, parentlocation.left).clip(
+                            self.context.bounds
+                        ),
+                    )
                 self.context.refresh()
             self.__dirty = False
 
@@ -207,20 +239,23 @@ class MainLoop:
                             event = ScrollInputEvent(x, y, Directions.UP)
                         elif mask == curses.BUTTON1_RELEASED:
                             if (
-                                self.__mousestate[Buttons.LEFT][0] == (x, y) and
-                                (time.time() - self.__mousestate[Buttons.LEFT][1]) < 1.0
+                                self.__mousestate[Buttons.LEFT][0] == (x, y)
+                                and (time.time() - self.__mousestate[Buttons.LEFT][1])
+                                < 1.0
                             ):
                                 event = MouseInputEvent(x, y, Buttons.LEFT)
                         elif mask == curses.BUTTON2_RELEASED:
                             if (
-                                self.__mousestate[Buttons.MIDDLE][0] == (x, y) and
-                                (time.time() - self.__mousestate[Buttons.MIDDLE][1]) < 1.0
+                                self.__mousestate[Buttons.MIDDLE][0] == (x, y)
+                                and (time.time() - self.__mousestate[Buttons.MIDDLE][1])
+                                < 1.0
                             ):
                                 event = MouseInputEvent(x, y, Buttons.MIDDLE)
                         elif mask == curses.BUTTON3_RELEASED:
                             if (
-                                self.__mousestate[Buttons.RIGHT][0] == (x, y) and
-                                (time.time() - self.__mousestate[Buttons.RIGHT][1]) < 1.0
+                                self.__mousestate[Buttons.RIGHT][0] == (x, y)
+                                and (time.time() - self.__mousestate[Buttons.RIGHT][1])
+                                < 1.0
                             ):
                                 event = MouseInputEvent(x, y, Buttons.RIGHT)
                         elif mask == curses.REPORT_MOUSE_POSITION or mask == 0x200000:

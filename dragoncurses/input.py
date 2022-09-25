@@ -46,7 +46,9 @@ class MouseInputEvent(InputEvent):
         self.button = button
 
     def __repr__(self) -> str:
-        return "MouseInputEvent(x={}, y={}, button={})".format(self.x, self.y, self.button)
+        return "MouseInputEvent(x={}, y={}, button={})".format(
+            self.x, self.y, self.button
+        )
 
 
 class ScrollInputEvent(InputEvent):
@@ -56,7 +58,9 @@ class ScrollInputEvent(InputEvent):
         self.direction = direction
 
     def __repr__(self) -> str:
-        return "ScrollInputEvent(x={}, y={}, direction={})".format(self.x, self.y, self.direction)
+        return "ScrollInputEvent(x={}, y={}, direction={})".format(
+            self.x, self.y, self.direction
+        )
 
 
 class DefocusInputEvent(InputEvent):

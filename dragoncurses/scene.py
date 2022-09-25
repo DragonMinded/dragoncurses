@@ -11,7 +11,6 @@ SettingT = TypeVar("SettingT")
 
 
 class Scene:
-
     def __init__(self, main_loop: "MainLoop", settings: Dict[str, Any]) -> None:
         self.settings: Dict[str, Any] = settings
         self.main_loop: "MainLoop" = main_loop
@@ -23,7 +22,12 @@ class Scene:
     def destroy(self) -> None:
         pass
 
-    def register_component(self, component: "Component", location: Optional["BoundingRectangle"] = None, parent: Optional["Component"] = None) -> bool:
+    def register_component(
+        self,
+        component: "Component",
+        location: Optional["BoundingRectangle"] = None,
+        parent: Optional["Component"] = None,
+    ) -> bool:
         self.main_loop.register_component(component, location, parent)
         return True
 
@@ -35,7 +39,9 @@ class Scene:
         self.__stored_components[name] = component
         return component
 
-    def get_reference(self, name: str, expected_type: Type["ComponentT"]) -> "ComponentT":
+    def get_reference(
+        self, name: str, expected_type: Type["ComponentT"]
+    ) -> "ComponentT":
         if name not in self.__stored_components:
             raise Exception("Invalid component reference {}".format(name))
         component = self.__stored_components[name]
@@ -47,7 +53,12 @@ class Scene:
         self.settings[name] = setting
         return setting
 
-    def get_setting(self, name: str, expected_type: Type["SettingT"], default: Optional["SettingT"] = None) -> "SettingT":
+    def get_setting(
+        self,
+        name: str,
+        expected_type: Type["SettingT"],
+        default: Optional["SettingT"] = None,
+    ) -> "SettingT":
         if name not in self.settings:
             if default is not None:
                 return default
@@ -57,7 +68,9 @@ class Scene:
             raise Exception("Invalid setting {}".format(name))
         return setting
 
-    def get_optional_setting(self, name: str, expected_type: Type["SettingT"]) -> Optional["SettingT"]:
+    def get_optional_setting(
+        self, name: str, expected_type: Type["SettingT"]
+    ) -> Optional["SettingT"]:
         if name not in self.settings:
             return None
         setting = self.settings[name]

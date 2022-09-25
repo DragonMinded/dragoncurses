@@ -1,6 +1,17 @@
 from threading import Lock
-from _curses import error as CursesError
-from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Type, TypeVar, Union, TYPE_CHECKING
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    List,
+    Optional,
+    Sequence,
+    Tuple,
+    Type,
+    TypeVar,
+    Union,
+    TYPE_CHECKING,
+)
 
 from .input import Buttons, Keys, MouseInputEvent, KeyboardInputEvent, DefocusInputEvent
 from .context import Color, RenderContext, BoundingRectangle
@@ -58,10 +69,7 @@ class Component:
 
     def unregister(self, component: "Component") -> None:
         self.scene.unregister_component(component)
-        self.__children = [
-            c for c in self.__children
-            if id(c) != id(component)
-        ]
+        self.__children = [c for c in self.__children if id(c) != id(component)]
 
     @property
     def dirty(self) -> bool:
@@ -129,7 +137,12 @@ class Component:
         self.settings[name] = setting
         return setting
 
-    def get_setting(self, name: str, expected_type: Type["SettingT"], default: Optional["SettingT"] = None) -> "SettingT":
+    def get_setting(
+        self,
+        name: str,
+        expected_type: Type["SettingT"],
+        default: Optional["SettingT"] = None,
+    ) -> "SettingT":
         if name not in self.settings:
             if default is not None:
                 return default
@@ -139,7 +152,9 @@ class Component:
             raise Exception("Invalid setting {}".format(name))
         return setting
 
-    def get_optional_setting(self, name: str, expected_type: Type["SettingT"]) -> Optional["SettingT"]:
+    def get_optional_setting(
+        self, name: str, expected_type: Type["SettingT"]
+    ) -> Optional["SettingT"]:
         if name not in self.settings:
             return None
         setting = self.settings[name]
@@ -199,8 +214,16 @@ def _text_to_hotkeys(text: str) -> Tuple[str, Optional[str]]:
 
 
 class LabelComponent(Component):
-
-    def __init__(self, text: str = "", *, textcolor: Optional[str] = None, backcolor: Optional[str] = None, invert: bool = False, formatted: bool = False, centered: bool = False) -> None:
+    def __init__(
+        self,
+        text: str = "",
+        *,
+        textcolor: Optional[str] = None,
+        backcolor: Optional[str] = None,
+        invert: bool = False,
+        formatted: bool = False,
+        centered: bool = False
+    ) -> None:
         super().__init__()
         self.__text = text
         self.__forecolor = textcolor or Color.NONE
@@ -219,7 +242,14 @@ class LabelComponent(Component):
         if self.__invert or (self.__backcolor != Color.NONE):
             # Fill the entire label so that it is fully inverted
             for line in range(context.bounds.height):
-                context.draw_string(line, 0, " " * context.bounds.width, forecolor=self.__forecolor, backcolor=self.__backcolor, invert=True)
+                context.draw_string(
+                    line,
+                    0,
+                    " " * context.bounds.width,
+                    forecolor=self.__forecolor,
+                    backcolor=self.__backcolor,
+                    invert=True,
+                )
         else:
             # Erase the background because labels aren't clear.
             context.clear()
@@ -233,11 +263,29 @@ class LabelComponent(Component):
                 pre = ""
                 post = ""
             if self.__forecolor != Color.NONE or self.__backcolor != Color.NONE:
-                pre = pre + "<{},{}>".format(self.__forecolor.lower(), self.__backcolor.lower())
-                post = "</{},{}>".format(self.__forecolor.lower(), self.__backcolor.lower()) + post
-            context.draw_formatted_string(0, 0, pre + self.__text + post, wrap=True, centered=self.__centered)
+                pre = pre + "<{},{}>".format(
+                    self.__forecolor.lower(), self.__backcolor.lower()
+                )
+                post = (
+                    "</{},{}>".format(
+                        self.__forecolor.lower(), self.__backcolor.lower()
+                    )
+                    + post
+                )
+            context.draw_formatted_string(
+                0, 0, pre + self.__text + post, wrap=True, centered=self.__centered
+            )
         else:
-            context.draw_string(0, 0, self.__text, forecolor=self.__forecolor, backcolor=self.__backcolor, invert=self.__invert, wrap=True, centered=self.__centered)
+            context.draw_string(
+                0,
+                0,
+                self.__text,
+                forecolor=self.__forecolor,
+                backcolor=self.__backcolor,
+                invert=self.__invert,
+                wrap=True,
+                centered=self.__centered,
+            )
 
         self.__rendered = True
 
@@ -260,7 +308,9 @@ class LabelComponent(Component):
 
     def __set_textcolor(self, textcolor: str) -> None:
         with self.lock:
-            self.__rendered = False if not self.__rendered else (self.__forecolor == textcolor)
+            self.__rendered = (
+                False if not self.__rendered else (self.__forecolor == textcolor)
+            )
             self.__forecolor = textcolor
 
     textcolor = property(__get_textcolor, __set_textcolor)
@@ -270,7 +320,9 @@ class LabelComponent(Component):
 
     def __set_backcolor(self, backcolor: str) -> None:
         with self.lock:
-            self.__rendered = False if not self.__rendered else (self.__backcolor == backcolor)
+            self.__rendered = (
+                False if not self.__rendered else (self.__backcolor == backcolor)
+            )
             self.__backcolor = backcolor
 
     backcolor = property(__get_backcolor, __set_backcolor)
@@ -280,7 +332,9 @@ class LabelComponent(Component):
 
     def __set_invert(self, invert: bool) -> None:
         with self.lock:
-            self.__rendered = False if not self.__rendered else (self.__invert == invert)
+            self.__rendered = (
+                False if not self.__rendered else (self.__invert == invert)
+            )
             self.__invert = invert
 
     invert = property(__get_invert, __set_invert)
@@ -290,7 +344,9 @@ class LabelComponent(Component):
 
     def __set_visible(self, visible: bool) -> None:
         with self.lock:
-            self.__rendered = False if not self.__rendered else (self.__visible == visible)
+            self.__rendered = (
+                False if not self.__rendered else (self.__visible == visible)
+            )
             self.__visible = visible
 
     visible = property(__get_visible, __set_visible)
@@ -303,7 +359,9 @@ class ClickableComponent(Component):
 
     callback = None
 
-    def on_click(self: ComponentT, callback: Callable[[Component, str], bool]) -> ComponentT:
+    def on_click(
+        self: ComponentT, callback: Callable[[Component, str], bool]
+    ) -> ComponentT:
         self.callback = callback
         return self
 
@@ -343,7 +401,7 @@ class HotkeyableComponent(Component):
                     # Wrong input, defer to other mixins
                     return super().handle_input(event)
 
-                callback = getattr(self, 'callback', None)
+                callback = getattr(self, "callback", None)
                 if callback is not None:
                     handled = callback(self, Buttons.KEY)
                     # Fall through to default if the callback didn't handle
@@ -357,14 +415,30 @@ class HotkeyableComponent(Component):
 
 
 class ButtonComponent(HotkeyableComponent, ClickableComponent, Component):
-
-    def __init__(self, text: str = "", *, textcolor: Optional[str] = None, bordercolor: Optional[str] = None, invert: bool = False, formatted: bool = False, centered: bool = False) -> None:
+    def __init__(
+        self,
+        text: str = "",
+        *,
+        textcolor: Optional[str] = None,
+        bordercolor: Optional[str] = None,
+        invert: bool = False,
+        formatted: bool = False,
+        centered: bool = False
+    ) -> None:
         super().__init__()
         text, hotkey = _text_to_hotkeys(text)
-        self.__label = LabelComponent(text, textcolor=textcolor, formatted=formatted, centered=centered, invert=invert)
+        self.__label = LabelComponent(
+            text,
+            textcolor=textcolor,
+            formatted=formatted,
+            centered=centered,
+            invert=invert,
+        )
         self.__border = BorderComponent(
             PaddingComponent(self.__label, horizontalpadding=1),
-            style=BorderComponent.DOUBLE if Settings.enable_unicode else BorderComponent.ASCII,
+            style=BorderComponent.DOUBLE
+            if Settings.enable_unicode
+            else BorderComponent.ASCII,
             bordercolor=bordercolor,
         )
         if hotkey:
@@ -437,12 +511,18 @@ class ButtonComponent(HotkeyableComponent, ClickableComponent, Component):
 
 class BorderComponent(Component):
 
-    SOLID = 'SOLID'
-    ASCII = 'ASCII'
-    SINGLE = 'SINGLE'
-    DOUBLE = 'DOUBLE'
+    SOLID = "SOLID"
+    ASCII = "ASCII"
+    SINGLE = "SINGLE"
+    DOUBLE = "DOUBLE"
 
-    def __init__(self, component: Component, *, style: Optional[str] = None, bordercolor: Optional[str] = None) -> None:
+    def __init__(
+        self,
+        component: Component,
+        *,
+        style: Optional[str] = None,
+        bordercolor: Optional[str] = None
+    ) -> None:
         super().__init__()
         self.__component = component
         self.__style = style or BorderComponent.SOLID
@@ -451,7 +531,11 @@ class BorderComponent(Component):
         self.__visible = True
 
         if self.__style in [self.SINGLE, self.DOUBLE] and not Settings.enable_unicode:
-            raise ComponentException("Unicode is not enabled, cannot use {} border style!".format(self.__style))
+            raise ComponentException(
+                "Unicode is not enabled, cannot use {} border style!".format(
+                    self.__style
+                )
+            )
 
     @property
     def dirty(self) -> bool:
@@ -488,50 +572,101 @@ class BorderComponent(Component):
         for x in range(context.bounds.width):
             if self.__style == BorderComponent.SOLID:
                 context.draw_string(0, x, " ", invert=True, forecolor=self.__color)
-                context.draw_string(context.bounds.height - 1, x, " ", invert=True, forecolor=self.__color)
+                context.draw_string(
+                    context.bounds.height - 1,
+                    x,
+                    " ",
+                    invert=True,
+                    forecolor=self.__color,
+                )
             elif self.__style == BorderComponent.ASCII:
                 context.draw_string(0, x, "-", forecolor=self.__color)
-                context.draw_string(context.bounds.height - 1, x, "-", forecolor=self.__color)
+                context.draw_string(
+                    context.bounds.height - 1, x, "-", forecolor=self.__color
+                )
             elif self.__style == BorderComponent.SINGLE:
                 context.draw_string(0, x, "\u2500", forecolor=self.__color)
-                context.draw_string(context.bounds.height - 1, x, "\u2500", forecolor=self.__color)
+                context.draw_string(
+                    context.bounds.height - 1, x, "\u2500", forecolor=self.__color
+                )
             elif self.__style == BorderComponent.DOUBLE:
                 context.draw_string(0, x, "\u2550", forecolor=self.__color)
-                context.draw_string(context.bounds.height - 1, x, "\u2550", forecolor=self.__color)
+                context.draw_string(
+                    context.bounds.height - 1, x, "\u2550", forecolor=self.__color
+                )
             else:
                 raise ComponentException("Invalid border style {}".format(self.__style))
 
         for y in range(1, context.bounds.height - 1):
             if self.__style == BorderComponent.SOLID:
                 context.draw_string(y, 0, " ", invert=True, forecolor=self.__color)
-                context.draw_string(y, context.bounds.width - 1, " ", invert=True, forecolor=self.__color)
+                context.draw_string(
+                    y,
+                    context.bounds.width - 1,
+                    " ",
+                    invert=True,
+                    forecolor=self.__color,
+                )
             elif self.__style == BorderComponent.ASCII:
                 context.draw_string(y, 0, "|", forecolor=self.__color)
-                context.draw_string(y, context.bounds.width - 1, "|", forecolor=self.__color)
+                context.draw_string(
+                    y, context.bounds.width - 1, "|", forecolor=self.__color
+                )
             elif self.__style == BorderComponent.SINGLE:
                 context.draw_string(y, 0, "\u2502", forecolor=self.__color)
-                context.draw_string(y, context.bounds.width - 1, "\u2502", forecolor=self.__color)
+                context.draw_string(
+                    y, context.bounds.width - 1, "\u2502", forecolor=self.__color
+                )
             elif self.__style == BorderComponent.DOUBLE:
                 context.draw_string(y, 0, "\u2551", forecolor=self.__color)
-                context.draw_string(y, context.bounds.width - 1, "\u2551", forecolor=self.__color)
+                context.draw_string(
+                    y, context.bounds.width - 1, "\u2551", forecolor=self.__color
+                )
             else:
                 raise ComponentException("Invalid border style {}".format(self.__style))
 
         if self.__style == BorderComponent.ASCII:
             context.draw_string(0, 0, "+", forecolor=self.__color)
-            context.draw_string(0, context.bounds.width - 1, "+", forecolor=self.__color)
-            context.draw_string(context.bounds.height - 1, 0, "+", forecolor=self.__color)
-            context.draw_string(context.bounds.height - 1, context.bounds.width - 1, "+", forecolor=self.__color)
+            context.draw_string(
+                0, context.bounds.width - 1, "+", forecolor=self.__color
+            )
+            context.draw_string(
+                context.bounds.height - 1, 0, "+", forecolor=self.__color
+            )
+            context.draw_string(
+                context.bounds.height - 1,
+                context.bounds.width - 1,
+                "+",
+                forecolor=self.__color,
+            )
         elif self.__style == BorderComponent.SINGLE:
             context.draw_string(0, 0, "\u250C", forecolor=self.__color)
-            context.draw_string(0, context.bounds.width - 1, "\u2510", forecolor=self.__color)
-            context.draw_string(context.bounds.height - 1, 0, "\u2514", forecolor=self.__color)
-            context.draw_string(context.bounds.height - 1, context.bounds.width - 1, "\u2518", forecolor=self.__color)
+            context.draw_string(
+                0, context.bounds.width - 1, "\u2510", forecolor=self.__color
+            )
+            context.draw_string(
+                context.bounds.height - 1, 0, "\u2514", forecolor=self.__color
+            )
+            context.draw_string(
+                context.bounds.height - 1,
+                context.bounds.width - 1,
+                "\u2518",
+                forecolor=self.__color,
+            )
         elif self.__style == BorderComponent.DOUBLE:
             context.draw_string(0, 0, "\u2554", forecolor=self.__color)
-            context.draw_string(0, context.bounds.width - 1, "\u2557", forecolor=self.__color)
-            context.draw_string(context.bounds.height - 1, 0, "\u255A", forecolor=self.__color)
-            context.draw_string(context.bounds.height - 1, context.bounds.width - 1, "\u255D", forecolor=self.__color)
+            context.draw_string(
+                0, context.bounds.width - 1, "\u2557", forecolor=self.__color
+            )
+            context.draw_string(
+                context.bounds.height - 1, 0, "\u255A", forecolor=self.__color
+            )
+            context.draw_string(
+                context.bounds.height - 1,
+                context.bounds.width - 1,
+                "\u255D",
+                forecolor=self.__color,
+            )
 
         if context.bounds.width > 2 and context.bounds.height > 2:
             self.__component._render(
@@ -540,7 +675,7 @@ class BorderComponent(Component):
                     top=context.bounds.top + 1,
                     bottom=context.bounds.bottom - 1,
                     left=context.bounds.left + 1,
-                    right=context.bounds.right - 1
+                    right=context.bounds.right - 1,
                 ),
             )
 
@@ -573,10 +708,16 @@ class BorderComponent(Component):
 
 class ListComponent(Component):
 
-    DIRECTION_TOP_TO_BOTTOM = 'top_to_bottom'
-    DIRECTION_LEFT_TO_RIGHT = 'left_to_right'
+    DIRECTION_TOP_TO_BOTTOM = "top_to_bottom"
+    DIRECTION_LEFT_TO_RIGHT = "left_to_right"
 
-    def __init__(self, components: Sequence[Component], *, direction: str, size: Optional[int]=None) -> None:
+    def __init__(
+        self,
+        components: Sequence[Component],
+        *,
+        direction: str,
+        size: Optional[int] = None
+    ) -> None:
         super().__init__()
         self.__components = components
         self.__size = size
@@ -604,7 +745,9 @@ class ListComponent(Component):
             elif self.__direction == self.DIRECTION_LEFT_TO_RIGHT:
                 perpendicular = max(perpendicular, innerbounds.height)
             else:
-                raise ComponentException("Invalid direction {}".format(self.__direction))
+                raise ComponentException(
+                    "Invalid direction {}".format(self.__direction)
+                )
 
         if self.__direction == self.DIRECTION_TOP_TO_BOTTOM:
             return BoundingRectangle(
@@ -644,11 +787,13 @@ class ListComponent(Component):
             elif self.__direction == self.DIRECTION_LEFT_TO_RIGHT:
                 size = int(context.bounds.width / len(self.__components))
             else:
-                raise ComponentException("Invalid direction {}".format(self.__direction))
+                raise ComponentException(
+                    "Invalid direction {}".format(self.__direction)
+                )
         else:
             size = self.__size
         if size is None:
-            raise Exception('Logic error!')
+            raise Exception("Logic error!")
         if size < 1:
             size = 1
         return size
@@ -659,7 +804,7 @@ class ListComponent(Component):
 
         size = self.__get_size(context)
         if size is None:
-            raise Exception('Logic error!')
+            raise Exception("Logic error!")
 
         offset = 0
         for component in self.__components:
@@ -694,7 +839,9 @@ class ListComponent(Component):
                     right=componentright,
                 )
             else:
-                raise ComponentException("Invalid direction {}".format(self.__direction))
+                raise ComponentException(
+                    "Invalid direction {}".format(self.__direction)
+                )
 
             offset += size
             component._render(context, bounds)
@@ -723,6 +870,7 @@ class ListComponent(Component):
                 if callback():
                     return True
             return False
+
         return _defer
 
     def __get_visible(self) -> bool:
@@ -735,17 +883,26 @@ class ListComponent(Component):
     visible = property(__get_visible, __set_visible)
 
     def __repr__(self) -> str:
-        return "ListComponent({}, direction={})".format(",".join(repr(c) for c in self.__components), self.__direction)
+        return "ListComponent({}, direction={})".format(
+            ",".join(repr(c) for c in self.__components), self.__direction
+        )
 
 
 class StickyComponent(Component):
 
-    LOCATION_TOP = 'top'
-    LOCATION_BOTTOM = 'bottom'
-    LOCATION_LEFT = 'left'
-    LOCATION_RIGHT = 'right'
+    LOCATION_TOP = "top"
+    LOCATION_BOTTOM = "bottom"
+    LOCATION_LEFT = "left"
+    LOCATION_RIGHT = "right"
 
-    def __init__(self, stickycomponent: Component, othercomponent: Component, *, location: str, size: int) -> None:
+    def __init__(
+        self,
+        stickycomponent: Component,
+        othercomponent: Component,
+        *,
+        location: str,
+        size: int
+    ) -> None:
         super().__init__()
         self.__components = [stickycomponent, othercomponent]
         self.__size = size
@@ -758,7 +915,10 @@ class StickyComponent(Component):
 
     @property
     def bounds(self) -> Optional[BoundingRectangle]:
-        stickybounds, otherbounds = self.__components[0].bounds, self.__components[1].bounds
+        stickybounds, otherbounds = (
+            self.__components[0].bounds,
+            self.__components[1].bounds,
+        )
         if stickybounds is None or otherbounds is None:
             return None
 
@@ -818,7 +978,7 @@ class StickyComponent(Component):
                     bottom=context.bounds.bottom,
                     left=context.bounds.left,
                     right=context.bounds.right,
-                )
+                ),
             ]
         elif self.__location == self.LOCATION_BOTTOM:
             bounds = [
@@ -833,7 +993,7 @@ class StickyComponent(Component):
                     bottom=context.bounds.bottom - size,
                     left=context.bounds.left,
                     right=context.bounds.right,
-                )
+                ),
             ]
         elif self.__location == self.LOCATION_LEFT:
             bounds = [
@@ -848,7 +1008,7 @@ class StickyComponent(Component):
                     bottom=context.bounds.bottom,
                     left=context.bounds.left + size,
                     right=context.bounds.right,
-                )
+                ),
             ]
         elif self.__location == self.LOCATION_RIGHT:
             bounds = [
@@ -863,7 +1023,7 @@ class StickyComponent(Component):
                     bottom=context.bounds.bottom,
                     left=context.bounds.left,
                     right=context.bounds.right - size,
-                )
+                ),
             ]
         else:
             raise ComponentException("Invalid location {}".format(self.__location))
@@ -898,6 +1058,7 @@ class StickyComponent(Component):
                 if callback():
                     return True
             return False
+
         return _defer
 
     def __get_visible(self) -> bool:
@@ -910,11 +1071,12 @@ class StickyComponent(Component):
     visible = property(__get_visible, __set_visible)
 
     def __repr__(self) -> str:
-        return "StickyComponent({}, location={})".format(",".join(repr(c) for c in self.__components), self.__location)
+        return "StickyComponent({}, location={})".format(
+            ",".join(repr(c) for c in self.__components), self.__location
+        )
 
 
 class PaddingComponent(Component):
-
     def __init__(self, component: Component, **kwargs) -> None:
         super().__init__()
         self.__component = component
@@ -923,20 +1085,22 @@ class PaddingComponent(Component):
         self.__toppad = 0
         self.__bottompad = 0
 
-        if 'padding' in kwargs:
-            self.__leftpad = self.__rightpad = self.__toppad = self.__bottompad = kwargs['padding']
-        if 'verticalpadding' in kwargs:
-            self.__toppad = self.__bottompad = kwargs['verticalpadding']
-        if 'horizontalpadding' in kwargs:
-            self.__leftpad = self.__rightpad = kwargs['horizontalpadding']
-        if 'leftpadding' in kwargs:
-            self.__leftpad = kwargs['leftpadding']
-        if 'rightpadding' in kwargs:
-            self.__rightpad = kwargs['rightpadding']
-        if 'toppadding' in kwargs:
-            self.__toppad = kwargs['toppadding']
-        if 'bottompadding' in kwargs:
-            self.__bottompad = kwargs['bottompadding']
+        if "padding" in kwargs:
+            self.__leftpad = (
+                self.__rightpad
+            ) = self.__toppad = self.__bottompad = kwargs["padding"]
+        if "verticalpadding" in kwargs:
+            self.__toppad = self.__bottompad = kwargs["verticalpadding"]
+        if "horizontalpadding" in kwargs:
+            self.__leftpad = self.__rightpad = kwargs["horizontalpadding"]
+        if "leftpadding" in kwargs:
+            self.__leftpad = kwargs["leftpadding"]
+        if "rightpadding" in kwargs:
+            self.__rightpad = kwargs["rightpadding"]
+        if "toppadding" in kwargs:
+            self.__toppad = kwargs["toppadding"]
+        if "bottompadding" in kwargs:
+            self.__bottompad = kwargs["bottompadding"]
 
     @property
     def dirty(self) -> bool:
@@ -949,9 +1113,13 @@ class PaddingComponent(Component):
             return None
         return BoundingRectangle(
             top=0,
-            bottom=(innerbounds.height + self.__toppad + self.__bottompad) if (innerbounds.height > 0) else 0,
+            bottom=(innerbounds.height + self.__toppad + self.__bottompad)
+            if (innerbounds.height > 0)
+            else 0,
             left=0,
-            right=(innerbounds.width + self.__leftpad + self.__rightpad) if (innerbounds.width > 0) else 0,
+            right=(innerbounds.width + self.__leftpad + self.__rightpad)
+            if (innerbounds.width > 0)
+            else 0,
         )
 
     def attach(self, scene: "Scene", settings: Dict[str, Any]) -> None:
@@ -984,8 +1152,16 @@ class PaddingComponent(Component):
 
 
 class DialogBoxComponent(Component):
-
-    def __init__(self, text: str, options: Sequence[Tuple[str, Callable[..., Any]]], *, padding: int = 5, formatted: bool = False, centered: bool = False, escape_option: Optional[str] = None) -> None:
+    def __init__(
+        self,
+        text: str,
+        options: Sequence[Tuple[str, Callable[..., Any]]],
+        *,
+        padding: int = 5,
+        formatted: bool = False,
+        centered: bool = False,
+        escape_option: Optional[str] = None
+    ) -> None:
         super().__init__()
         self.__text = text
         self.__padding = padding
@@ -1001,7 +1177,9 @@ class DialogBoxComponent(Component):
         for option, callback in options:
             text, hotkey = _text_to_hotkeys(option)
             entry = ButtonComponent(text, formatted=True).on_click(
-                lambda component, button, option=option, callback=callback: __cb(button, option, callback),
+                lambda component, button, option=option, callback=callback: __cb(
+                    button, option, callback
+                ),
             )
             if hotkey is not None:
                 entry = entry.set_hotkey(hotkey)
@@ -1013,8 +1191,12 @@ class DialogBoxComponent(Component):
             BorderComponent(
                 PaddingComponent(
                     StickyComponent(
-                        ListComponent(buttons, direction=ListComponent.DIRECTION_LEFT_TO_RIGHT),
-                        LabelComponent(self.__text, formatted=formatted, centered=centered),
+                        ListComponent(
+                            buttons, direction=ListComponent.DIRECTION_LEFT_TO_RIGHT
+                        ),
+                        LabelComponent(
+                            self.__text, formatted=formatted, centered=centered
+                        ),
                         size=3,
                         location=StickyComponent.LOCATION_BOTTOM,
                     ),
@@ -1058,6 +1240,7 @@ class DialogBoxComponent(Component):
             def _defer() -> bool:
                 handled()
                 return True
+
             return _defer
 
     def __repr__(self) -> str:
@@ -1069,7 +1252,6 @@ class MenuComponent(Component):
 
 
 class MenuEntryComponent(HotkeyableComponent, ClickableComponent, MenuComponent):
-
     def __init__(self, text: str = "", *, expandable: bool = False) -> None:
         super().__init__()
         self.__text = text
@@ -1095,7 +1277,9 @@ class MenuEntryComponent(HotkeyableComponent, ClickableComponent, MenuComponent)
             post = ""
         context.draw_formatted_string(0, 0, pre + " " + self.__text + " " + post)
         if self.__expandable:
-            context.draw_formatted_string(0, context.bounds.width - 2, pre + " >" + post)
+            context.draw_formatted_string(
+                0, context.bounds.width - 2, pre + " >" + post
+            )
         self.__rendered = True
 
     @property
@@ -1108,7 +1292,8 @@ class MenuEntryComponent(HotkeyableComponent, ClickableComponent, MenuComponent)
             top=0,
             bottom=1,
             left=0,
-            right=RenderContext.formatted_string_length(self.__text) + (3 if self.__expandable else 2),
+            right=RenderContext.formatted_string_length(self.__text)
+            + (3 if self.__expandable else 2),
         )
 
     def tick(self) -> None:
@@ -1121,7 +1306,9 @@ class MenuEntryComponent(HotkeyableComponent, ClickableComponent, MenuComponent)
 
     def __set_animating(self, animating: bool) -> None:
         with self.lock:
-            self.__rendered = False if not self.__rendered else (self.__animating == animating)
+            self.__rendered = (
+                False if not self.__rendered else (self.__animating == animating)
+            )
             self.__animating = animating
             self.__animation_spot = 1
 
@@ -1136,14 +1323,15 @@ class MenuEntryComponent(HotkeyableComponent, ClickableComponent, MenuComponent)
 
 
 class MenuSeparatorComponent(MenuComponent):
-
     def __init__(self) -> None:
         super().__init__()
         self.__rendered = False
 
     def render(self, context: RenderContext) -> None:
         context.clear()
-        context.draw_string(0, 0, ("\u2500" if Settings.enable_unicode else "-") * context.bounds.width)
+        context.draw_string(
+            0, 0, ("\u2500" if Settings.enable_unicode else "-") * context.bounds.width
+        )
         self.__rendered = True
 
     @property
@@ -1164,8 +1352,9 @@ class MenuSeparatorComponent(MenuComponent):
 
 
 class PopoverMenuComponent(Component):
-
-    def __init__(self, options: Sequence[Tuple[str, Any]], *, animated: bool = False) -> None:
+    def __init__(
+        self, options: Sequence[Tuple[str, Any]], *, animated: bool = False
+    ) -> None:
         super().__init__()
         self.__parent = None
         self.__children = []
@@ -1180,9 +1369,11 @@ class PopoverMenuComponent(Component):
                 return True
             if button == Buttons.LEFT or button == Buttons.KEY:
                 if self.__animated:  # pyre-ignore Pyre can't see that this exists.
+
                     def __closeaction():
                         callback(self, option)
                         self.__close()
+
                     # Delayed close
                     component.animating = True
                     self.__closecb = __closeaction
@@ -1194,10 +1385,14 @@ class PopoverMenuComponent(Component):
 
         def __new_menu(button, position, entries) -> bool:
             if button == Buttons.LEFT or button == Buttons.KEY:
-                menu = PopoverMenuComponent(entries, animated=self.__animated)  # pyre-ignore Pyre can't see that this exists.
+                menu = PopoverMenuComponent(
+                    entries, animated=self.__animated
+                )  # pyre-ignore Pyre can't see that this exists.
                 menu.__parent = self
                 self.register(menu, menu.bounds.offset(position, self.bounds.width))
-                self.__children.append(menu)  # pyre-ignore Pyre can't see that this exists.
+                self.__children.append(
+                    menu
+                )  # pyre-ignore Pyre can't see that this exists.
             return True
 
         position = 0
@@ -1210,7 +1405,9 @@ class PopoverMenuComponent(Component):
                 # Submenu
                 text, hotkey = _text_to_hotkeys(option)
                 entry = MenuEntryComponent(text, expandable=True).on_click(
-                    lambda component, button, position=position, entries=callback: __new_menu(button, position - 1, entries)
+                    lambda component, button, position=position, entries=callback: __new_menu(
+                        button, position - 1, entries
+                    )
                 )
                 if hotkey is not None:
                     entry = entry.set_hotkey(hotkey)
@@ -1219,7 +1416,9 @@ class PopoverMenuComponent(Component):
                 # Menu Entry
                 text, hotkey = _text_to_hotkeys(option)
                 entry = MenuEntryComponent(text).on_click(
-                    lambda component, button, option=option, callback=callback: __cb(component, button, option, callback)
+                    lambda component, button, option=option, callback=callback: __cb(
+                        component, button, option, callback
+                    )
                 )
                 if hotkey is not None:
                     entry = entry.set_hotkey(hotkey)
@@ -1322,13 +1521,24 @@ class MonochromePictureComponent(Component):
     SIZE_FULL = "SIZE_FULL"
     SIZE_HALF = "SIZE_HALF"
 
-    def __init__(self, data: Sequence[Sequence[bool]], *, size: Optional[str] = None, forecolor: Optional[str] = None, backcolor: Optional[str] = None) -> None:
+    def __init__(
+        self,
+        data: Sequence[Sequence[bool]],
+        *,
+        size: Optional[str] = None,
+        forecolor: Optional[str] = None,
+        backcolor: Optional[str] = None
+    ) -> None:
         super().__init__()
         self.__forecolor = forecolor or Color.NONE
         self.__backcolor = backcolor or Color.NONE
         self.__size = size or self.SIZE_FULL
         if self.__size == self.SIZE_HALF and not Settings.enable_unicode:
-            raise ComponentException("Unicode is not enabled, cannot use {} drawing style!".format(self.__size))
+            raise ComponentException(
+                "Unicode is not enabled, cannot use {} drawing style!".format(
+                    self.__size
+                )
+            )
         self.__rendered = False
         self.__set_data_impl(data)
 
@@ -1362,15 +1572,22 @@ class MonochromePictureComponent(Component):
                         invert = self.__data[row][column]
                         char = " "
 
-                    context.draw_string(row, column, char, invert=invert, forecolor=self.__forecolor, backcolor=self.__backcolor)
+                    context.draw_string(
+                        row,
+                        column,
+                        char,
+                        invert=invert,
+                        forecolor=self.__forecolor,
+                        backcolor=self.__backcolor,
+                    )
 
         if self.__size == self.SIZE_HALF:
             for row in range(int((self.__height + 1) / 2)):
                 for column in range(int((self.__width + 1) / 2)):
                     # Grab a quad that represents what graphic to draw
                     quad = (
-                        self.__data[row * 2][(column * 2):((column * 2) + 2)] +
-                        self.__data[(row * 2) + 1][(column * 2):((column * 2) + 2)]
+                        self.__data[row * 2][(column * 2) : ((column * 2) + 2)]
+                        + self.__data[(row * 2) + 1][(column * 2) : ((column * 2) + 2)]
                     )
                     quad = "".join("1" if v else "0" for v in quad)
 
@@ -1411,7 +1628,13 @@ class MonochromePictureComponent(Component):
                         raise Exception("Logic error, invalid quad '{}'!".format(quad))
 
                     # Render it
-                    context.draw_string(row, column, char, forecolor=self.__forecolor, backcolor=self.__backcolor)
+                    context.draw_string(
+                        row,
+                        column,
+                        char,
+                        forecolor=self.__forecolor,
+                        backcolor=self.__backcolor,
+                    )
 
         self.__rendered = True
 
@@ -1444,7 +1667,10 @@ class MonochromePictureComponent(Component):
 
         for i in range(len(self.__data)):
             if len(self.__data[i]) < desired_width:
-                self.__data[i] = [*self.__data[i], *([False] * (desired_width - len(self.__data[i])))]
+                self.__data[i] = [
+                    *self.__data[i],
+                    *([False] * (desired_width - len(self.__data[i]))),
+                ]
 
     def __set_data(self, data: Sequence[Sequence[bool]]) -> None:
         with self.lock:
@@ -1457,7 +1683,9 @@ class MonochromePictureComponent(Component):
 
     def __set_forecolor(self, forecolor: str) -> None:
         with self.lock:
-            self.__rendered = False if not self.__rendered else (self.__forecolor == forecolor)
+            self.__rendered = (
+                False if not self.__rendered else (self.__forecolor == forecolor)
+            )
             self.__forecolor = forecolor
 
     forecolor = property(__get_forecolor, __set_forecolor)
@@ -1467,7 +1695,9 @@ class MonochromePictureComponent(Component):
 
     def __set_backcolor(self, backcolor: str) -> None:
         with self.lock:
-            self.__rendered = False if not self.__rendered else (self.__backcolor == backcolor)
+            self.__rendered = (
+                False if not self.__rendered else (self.__backcolor == backcolor)
+            )
             self.__backcolor = backcolor
 
     backcolor = property(__get_backcolor, __set_backcolor)
@@ -1478,11 +1708,17 @@ class PictureComponent(Component):
     SIZE_FULL = "SIZE_FULL"
     SIZE_HALF = "SIZE_HALF"
 
-    def __init__(self, data: Sequence[Sequence[Color]], *, size: Optional[str] = None) -> None:
+    def __init__(
+        self, data: Sequence[Sequence[Color]], *, size: Optional[str] = None
+    ) -> None:
         super().__init__()
         self.__size = size or self.SIZE_FULL
         if self.__size == self.SIZE_HALF and not Settings.enable_unicode:
-            raise ComponentException("Unicode is not enabled, cannot use {} drawing style!".format(self.__size))
+            raise ComponentException(
+                "Unicode is not enabled, cannot use {} drawing style!".format(
+                    self.__size
+                )
+            )
         self.__rendered = False
         self.__set_data_impl(data)
 
@@ -1513,15 +1749,17 @@ class PictureComponent(Component):
                     forecolor = Color.NONE
                     backcolor = self.__data[row][column]
 
-                    context.draw_string(row, column, char, forecolor=forecolor, backcolor=backcolor)
+                    context.draw_string(
+                        row, column, char, forecolor=forecolor, backcolor=backcolor
+                    )
 
         if self.__size == self.SIZE_HALF:
             for row in range(int((self.__height + 1) / 2)):
                 for column in range(int((self.__width + 1) / 2)):
                     # Grab a quad that represents what graphic to draw
                     quad = (
-                        self.__data[row * 2][(column * 2):((column * 2) + 2)] +
-                        self.__data[(row * 2) + 1][(column * 2):((column * 2) + 2)]
+                        self.__data[row * 2][(column * 2) : ((column * 2) + 2)]
+                        + self.__data[(row * 2) + 1][(column * 2) : ((column * 2) + 2)]
                     )
                     colors = [q for q in quad if q != Color.NONE]
                     forecolor = colors[0] if len(colors) > 0 else Color.NONE
@@ -1572,7 +1810,9 @@ class PictureComponent(Component):
                         raise Exception("Logic error, invalid quad '{}'!".format(quad))
 
                     # Render it
-                    context.draw_string(row, column, char, forecolor=forecolor, backcolor=backcolor)
+                    context.draw_string(
+                        row, column, char, forecolor=forecolor, backcolor=backcolor
+                    )
 
         self.__rendered = True
 
@@ -1605,7 +1845,10 @@ class PictureComponent(Component):
 
         for i in range(len(self.__data)):
             if len(self.__data[i]) < desired_width:
-                self.__data[i] = [*self.__data[i], *([Color.NONE] * (desired_width - len(self.__data[i])))]
+                self.__data[i] = [
+                    *self.__data[i],
+                    *([Color.NONE] * (desired_width - len(self.__data[i]))),
+                ]
 
     def __set_data(self, data: Sequence[Sequence[Color]]) -> None:
         with self.lock:
@@ -1615,11 +1858,20 @@ class PictureComponent(Component):
 
 
 class TextInputComponent(Component):
-
-    def __init__(self, text: str, *, allowed_characters: str, focused: bool = False, max_length: int = -1, cursor_pos: int = -1) -> None:
+    def __init__(
+        self,
+        text: str,
+        *,
+        allowed_characters: str,
+        focused: bool = False,
+        max_length: int = -1,
+        cursor_pos: int = -1
+    ) -> None:
         super().__init__()
         self.__focused = focused
-        self.__cursor = min(max(0, len(text) if cursor_pos == -1 else cursor_pos), len(text))
+        self.__cursor = min(
+            max(0, len(text) if cursor_pos == -1 else cursor_pos), len(text)
+        )
         self.__text = text
         self.__max_length = max_length
         self.__characters = allowed_characters
@@ -1641,7 +1893,17 @@ class TextInputComponent(Component):
                 self.__cursor = 0
             if self.__cursor > len(self.__text):
                 self.__cursor = len(self.__text)
-            context.draw_formatted_string(0, 0, "<invert>" + text[:self.__cursor] + "</invert>" + text[self.__cursor:(self.__cursor + 1)] + "<invert>" + text[(self.__cursor + 1):] + "</invert>")
+            context.draw_formatted_string(
+                0,
+                0,
+                "<invert>"
+                + text[: self.__cursor]
+                + "</invert>"
+                + text[self.__cursor : (self.__cursor + 1)]
+                + "<invert>"
+                + text[(self.__cursor + 1) :]
+                + "</invert>",
+            )
 
         self.__changed = False
 
@@ -1678,8 +1940,12 @@ class TextInputComponent(Component):
 
     def handle_input(self, event: "InputEvent") -> Union[bool, DeferredInput]:
         def add(char: str) -> None:
-            if self.__max_length == -1 or len(self.__text) < self.__max_length:  # pyre-ignore Pyre can't see that this exists.
-                self.__text = self.__text[:self.__cursor] + char + self.__text[self.__cursor:]  # pyre-ignore Pyre can't see that this exists.
+            if (
+                self.__max_length == -1 or len(self.__text) < self.__max_length
+            ):  # pyre-ignore Pyre can't see that this exists.
+                self.__text = (
+                    self.__text[: self.__cursor] + char + self.__text[self.__cursor :]
+                )  # pyre-ignore Pyre can't see that this exists.
                 self.__cursor += 1
                 self.__changed = True
 
@@ -1706,24 +1972,33 @@ class TextInputComponent(Component):
                     return True
                 if event.character == Keys.DELETE:
                     if self.__cursor < len(self.__text):
-                        self.__text = self.__text[:self.__cursor] + self.__text[(self.__cursor + 1):]
+                        self.__text = (
+                            self.__text[: self.__cursor]
+                            + self.__text[(self.__cursor + 1) :]
+                        )
                         self.__changed = True
                     return True
                 if event.character == Keys.BACKSPACE:
                     if self.__cursor > 0:
-                        self.__text = self.__text[:(self.__cursor - 1)] + self.__text[self.__cursor:]
+                        self.__text = (
+                            self.__text[: (self.__cursor - 1)]
+                            + self.__text[self.__cursor :]
+                        )
                         self.__cursor -= 1
                         self.__changed = True
                     return True
         return False
 
     def __repr__(self) -> str:
-        return "TextInputComponent(text={}, focused={})".format(repr(self.__text), "True" if self.__focused else "False")
+        return "TextInputComponent(text={}, focused={})".format(
+            repr(self.__text), "True" if self.__focused else "False"
+        )
 
 
 class SelectInputComponent(Component):
-
-    def __init__(self, selected: str, options: Sequence[str], *, focused: bool = False) -> None:
+    def __init__(
+        self, selected: str, options: Sequence[str], *, focused: bool = False
+    ) -> None:
         super().__init__()
         self.__selected = selected
         self.__options = options
@@ -1746,9 +2021,9 @@ class SelectInputComponent(Component):
         if len(self.__selected) > area:
             # Doesn't fit, truncate.
             if Settings.enable_unicode:
-                text = self.__selected[:(area - 1)] + "\u2026"
+                text = self.__selected[: (area - 1)] + "\u2026"
             else:
-                text = self.__selected[:(area - 3)] + "..."
+                text = self.__selected[: (area - 3)] + "..."
         elif area > len(self.__selected):
             # Fits, center
             text = " " * int((area - len(self.__selected)) / 2) + self.__selected
@@ -1810,7 +2085,9 @@ class SelectInputComponent(Component):
 
         def select_previous() -> None:
             for i, option in enumerate(options):
-                if option == self.__selected:  # pyre-ignore Pyre can't see that this exists.
+                if (
+                    option == self.__selected
+                ):  # pyre-ignore Pyre can't see that this exists.
                     if i > 0:
                         self.__selected = options[i - 1]
                         self.__changed = True
@@ -1818,7 +2095,9 @@ class SelectInputComponent(Component):
 
         def select_next() -> None:
             for i, option in enumerate(options):
-                if option == self.__selected:  # pyre-ignore Pyre can't see that this exists.
+                if (
+                    option == self.__selected
+                ):  # pyre-ignore Pyre can't see that this exists.
                     if i < len(options) - 1:
                         self.__selected = options[i + 1]
                         self.__changed = True
@@ -1844,7 +2123,11 @@ class SelectInputComponent(Component):
         return False
 
     def __repr__(self) -> str:
-        return "SelectInputComponent(selected={}, options={}, focused={})".format(repr(self.__selected), repr(self.__options), "True" if self.__focused else "False")
+        return "SelectInputComponent(selected={}, options={}, focused={})".format(
+            repr(self.__selected),
+            repr(self.__options),
+            "True" if self.__focused else "False",
+        )
 
 
 class CenteredComponent(Component):

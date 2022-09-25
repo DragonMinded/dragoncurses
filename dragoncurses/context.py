@@ -2,11 +2,10 @@ import curses
 
 from contextlib import contextmanager
 from _curses import error as CursesError
-from typing import Generator, Optional, List, TypeVar
+from typing import Generator, Optional, List
 
 
 class BoundingRectangle:
-
     def __init__(self, *, top, bottom, left, right) -> None:
         self.top = top
         self.bottom = bottom
@@ -41,19 +40,21 @@ class BoundingRectangle:
         )
 
     def __repr__(self) -> str:
-        return "BoundingRectangle(top={}, bottom={}, left={}, right={})".format(self.top, self.bottom, self.left, self.right)
+        return "BoundingRectangle(top={}, bottom={}, left={}, right={})".format(
+            self.top, self.bottom, self.left, self.right
+        )
 
 
 class Color:
-    NONE = 'none'
-    RED = 'red'
-    YELLOW = 'yellow'
-    GREEN = 'green'
-    CYAN = 'cyan'
-    BLUE = 'blue'
-    MAGENTA = 'magenta'
-    WHITE = 'white'
-    BLACK = 'black'
+    NONE = "none"
+    RED = "red"
+    YELLOW = "yellow"
+    GREEN = "green"
+    CYAN = "cyan"
+    BLUE = "blue"
+    MAGENTA = "magenta"
+    WHITE = "white"
+    BLACK = "black"
 
 
 class RenderContext:
@@ -62,7 +63,7 @@ class RenderContext:
         Color.NONE: 0,
     }
 
-    def __init__(self, curses_context, off_y: int=0, off_x: int=0):
+    def __init__(self, curses_context, off_y: int = 0, off_x: int = 0):
         self.__curses_context = curses_context
         self.__off_y = off_y
         self.__off_x = off_x
@@ -135,7 +136,9 @@ class RenderContext:
         rect = rect.clip(self.bounds)
         try:
             yield RenderContext(
-                self.__curses_context.derwin(rect.height, rect.width, rect.top, rect.left),
+                self.__curses_context.derwin(
+                    rect.height, rect.width, rect.top, rect.left
+                ),
                 self.__off_y + rect.top,
                 self.__off_x + rect.left,
             )
@@ -143,7 +146,9 @@ class RenderContext:
             pass
 
     @staticmethod
-    def __get_wrap_points(string: str, starty: int, startx: int, bounds: BoundingRectangle) -> List[int]:
+    def __get_wrap_points(
+        string: str, starty: int, startx: int, bounds: BoundingRectangle
+    ) -> List[int]:
         locations = []
         processed = 0
 
@@ -154,7 +159,7 @@ class RenderContext:
             if len(string) <= width:
                 # Base case where we have enough room to draw the rest of the string.
                 for i in range(len(string)):
-                    if string[i] == '\n':
+                    if string[i] == "\n":
                         locations.append(processed + i + 1)
                 break
 
@@ -167,25 +172,25 @@ class RenderContext:
             i = 0
             maxiter = min(len(string), (width + 1))
             while i < maxiter:
-                if string[i] == '\n':
+                if string[i] == "\n":
                     # This is a manual wrap, set our location to one past it (we will
                     # rely on the fact that its still printable and let curses do whatever).
                     # Since we finish wrapping this chunk at this line, don't consider any
                     # further possibilities.
                     possibilities.append(i + 1)
                     break
-                elif string[i] in [' ', '\t']:
+                elif string[i] in [" ", "\t"]:
                     # We wrap at the end of the space block, so find the first non-space
                     # character and set that as the wrap point.
                     for j in range(i, len(string)):
-                        if string[j] not in [' ', '\t']:
+                        if string[j] not in [" ", "\t"]:
                             possibilities.append(j)
                             i = j
                             break
                     else:
                         # We didn't find anything, assume that spacing is the end of the string.
                         break
-                elif string[i] == '-' and i < width:
+                elif string[i] == "-" and i < width:
                     # We wrap after the dash as long as there isn't another dash and the
                     # characters before and after it are alphanumeric (word-break detection).
                     # We also don't want to wrap if this would have been the character on the
@@ -219,12 +224,12 @@ class RenderContext:
         x: int,
         string: str,
         *,
-        forecolor: str=Color.NONE,
-        backcolor: str=Color.NONE,
-        invert: bool=False,
-        underline: bool=False,
-        wrap: bool=False,
-        centered: bool=False,
+        forecolor: str = Color.NONE,
+        backcolor: str = Color.NONE,
+        invert: bool = False,
+        underline: bool = False,
+        wrap: bool = False,
+        centered: bool = False,
     ) -> None:
         attributes = curses.color_pair(self.__get_color(forecolor, backcolor))
         if invert:
@@ -236,7 +241,7 @@ class RenderContext:
             # Wrap points takes care of carriage returns, so neuter curses ability
             # to react to them.
             wrap_points = RenderContext.__get_wrap_points(string, y, x, self.bounds)
-            string = string.replace('\n', ' ')
+            string = string.replace("\n", " ")
         else:
             wrap_points = []
 
@@ -306,21 +311,28 @@ class RenderContext:
         x: int,
         string: str,
         *,
-        wrap: bool=False,
-        centered: bool=False,
+        wrap: bool = False,
+        centered: bool = False,
     ) -> None:
         attributes = 0
         last_pos = 0
         length_part = 0
         colors = [self.__get_color(Color.NONE, Color.NONE)]
         parts = RenderContext.__split_formatted_string(string)
-        rawtext = "".join(RenderContext.__sanitize(part) for part in parts if not (part[:1] == "<" and part[-1:] == ">"))
+        rawtext = "".join(
+            RenderContext.__sanitize(part)
+            for part in parts
+            if not (part[:1] == "<" and part[-1:] == ">")
+        )
         if wrap:
             wrap_points = RenderContext.__get_wrap_points(rawtext, y, x, self.bounds)
             if wrap_points:
                 lengths = [
                     wrap_points[0] - x,
-                    *[(wrap_points[i] - wrap_points[i - 1]) for i in range(1, len(wrap_points))],
+                    *[
+                        (wrap_points[i] - wrap_points[i - 1])
+                        for i in range(1, len(wrap_points))
+                    ],
                     len(rawtext) - wrap_points[-1],
                 ]
             else:
@@ -378,7 +390,7 @@ class RenderContext:
                 text = RenderContext.__sanitize(part)
                 if wrap:
                     # Disable curses ability to react to carriage returns
-                    text = text.replace('\n', ' ')
+                    text = text.replace("\n", " ")
                     while text:
                         if not wrap_points:
                             next_wrap_point = -1
@@ -389,7 +401,12 @@ class RenderContext:
                             amount = wrap_points[0] - last_pos
                             wrap_points = wrap_points[1:]
                             try:
-                                self.__curses_context.addstr(y, x, text[:amount], attributes | curses.color_pair(colors[-1]))
+                                self.__curses_context.addstr(
+                                    y,
+                                    x,
+                                    text[:amount],
+                                    attributes | curses.color_pair(colors[-1]),
+                                )
                             except CursesError:
                                 pass
                             text = text[amount:]
@@ -398,11 +415,21 @@ class RenderContext:
                             x = 0
                             if centered:
                                 length_part += 1
-                                if len(lengths) > length_part and lengths[length_part] < self.bounds.width:
-                                    x += int((self.bounds.width - lengths[length_part]) / 2)
+                                if (
+                                    len(lengths) > length_part
+                                    and lengths[length_part] < self.bounds.width
+                                ):
+                                    x += int(
+                                        (self.bounds.width - lengths[length_part]) / 2
+                                    )
                         else:
                             try:
-                                self.__curses_context.addstr(y, x, text, attributes | curses.color_pair(colors[-1]))
+                                self.__curses_context.addstr(
+                                    y,
+                                    x,
+                                    text,
+                                    attributes | curses.color_pair(colors[-1]),
+                                )
                             except CursesError:
                                 pass
                             x += len(text)
@@ -410,7 +437,9 @@ class RenderContext:
                             text = ""
                 else:
                     try:
-                        self.__curses_context.addstr(text, attributes | curses.color_pair(colors[-1]))
+                        self.__curses_context.addstr(
+                            text, attributes | curses.color_pair(colors[-1])
+                        )
                     except CursesError:
                         pass
 
@@ -435,7 +464,11 @@ class RenderContext:
     ) -> int:
         # TODO: This also isn't a very good place for this, but its close to the draw function as well.
         parts = RenderContext.__split_formatted_string(string)
-        rawtext = "".join(RenderContext.__sanitize(part) for part in parts if not (part[:1] == "<" and part[-1:] == ">"))
+        rawtext = "".join(
+            RenderContext.__sanitize(part)
+            for part in parts
+            if not (part[:1] == "<" and part[-1:] == ">")
+        )
         if len(rawtext) == 0:
             return 0
         wrap_points = RenderContext.__get_wrap_points(rawtext, 0, 0, self.bounds)
