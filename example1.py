@@ -476,14 +476,18 @@ class WelcomeScene(Scene):
 
 class TestScene(Scene):
     def pop_menu(self, component: Component, button: Buttons) -> bool:
+        if not isinstance(component, ButtonComponent):
+            raise Exception("Logic error, somehow got callback with wrong component?")
+        localcomponent: ButtonComponent = component
+
         def text(text: str) -> None:
-            component.text = text
+            localcomponent.text = text
 
         def color(color: Color) -> None:
-            component.textcolor = color
+            localcomponent.textcolor = color
 
         def border(color: Color) -> None:
-            component.bordercolor = color
+            localcomponent.bordercolor = color
 
         menu = PopoverMenuComponent(
             [
@@ -549,7 +553,7 @@ class TestScene(Scene):
             ],
             animated=True,
         )
-        component.register(
+        localcomponent.register(
             menu,
             menu.bounds.offset(3, 0),
         )
