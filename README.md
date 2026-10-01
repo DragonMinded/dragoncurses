@@ -15,3 +15,15 @@ This package is available on PyPI under the "dragoncurses" package and can be in
 ## Developing
 
 There are settings files for both mypy and flake8. Black is used to format the entire repository, with no settings tweaks. To check for type issuse, run "mypy ." at the root of the project. Similarly, to check for lint issues, run "flake8 ." at the root of the project. To autoformat code, run "black ." at the root of the project.
+
+## Contributing
+
+This project does not accept AI or LLM contributions in any form. Any pull request,
+issue, documentation, code review or other contribution created in whole or in part
+by AI will be rejected. Any prior contribution found to be generated in whole or in
+part by AI will be removed. Contributors are asked to understand and take responsibility
+for any contributions they submit to this project. If you are unsure or need help
+getting started please open an issue describing what you're attempting to do and we
+will work together to figure it out. Similarly, if you get stuck or need somebody
+to talk through an implementation with you please open a pull request describing
+what you want to accomplish and what you're stuck on.
